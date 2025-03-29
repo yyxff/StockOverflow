@@ -1,0 +1,3 @@
+module StockOverflow
+
+go 1.24.1
