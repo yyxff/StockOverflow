@@ -1,13 +1,16 @@
 package main
 
 import (
-	"log"
-
-	"github.com/panjf2000/gnet/v2"
+	_ "github.com/lib/pq"
 )
 
 func main() {
 
-	echo := &Server{}
-	log.Fatal(gnet.Run(echo, "tcp://localhost:12345", gnet.WithMulticore(true)))
+	dbm := databaseMaster{
+		connStr: "user=postgres password=passw0rd host=localhost port=5432 sslmode=disable",
+		dbName:  "stockoverflow",
+	}
+	dbm.connect()
+	dbm.createDB()
+
 }
