@@ -26,6 +26,7 @@ func main() {
 	logger.Println("Connecting to database...")
 	dbm.Connect()
 	dbm.CreateDB()
+	dbm.Init()
 
 	// Create and start the server
 	server := server.NewServer(logger)
