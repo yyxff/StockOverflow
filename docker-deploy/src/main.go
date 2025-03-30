@@ -1,21 +1,73 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	_ "github.com/lib/pq"
 )
 
 func main() {
+	// Setup logger
+	logger := log.New(os.Stdout, "EXCHANGE: ", log.LstdFlags|log.Lshortfile)
 
-	// new a dbmaster
+	// Initialize database connection
 	dbm := databaseMaster{
-		connStr: "user=postgres password=passw0rd host=localhost port=5432 sslmode=disable",
+		connStr: getDBConnStr(),
 		dbName:  "stockoverflow",
 	}
 
-	// connec to db
+	// Connect to database
+	logger.Println("Connecting to database...")
 	dbm.connect()
-
-	// create db if doesn't exist
 	dbm.createDB()
 
+	// Create and start the server
+	server := NewServer(logger)
+
+	// Start server in a goroutine
+	go func() {
+		logger.Println("Starting exchange server on port 12345...")
+		if err := server.Start(":12345"); err != nil {
+			logger.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	// Wait for termination signal
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for terminate signal
+	sig := <-sigCh
+	fmt.Printf("Received signal %v, shutting down...\n", sig)
+
+	// Stop the server
+	if err := server.Stop(); err != nil {
+		logger.Fatalf("Error during shutdown: %v", err)
+	}
+
+	logger.Println("Server shutdown complete")
+}
+
+// getDBConnStr returns the database connection string from environment
+// variables or uses default values
+func getDBConnStr() string {
+	host := getEnvOrDefault("DB_HOST", "localhost")
+	port := getEnvOrDefault("DB_PORT", "5432")
+	user := getEnvOrDefault("DB_USER", "postgres")
+	password := getEnvOrDefault("DB_PASSWORD", "passw0rd")
+
+	return fmt.Sprintf("user=%s password=%s host=%s port=%s sslmode=disable",
+		user, password, host, port)
+}
+
+// getEnvOrDefault returns environment variable value or default if not set
+func getEnvOrDefault(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
 }
