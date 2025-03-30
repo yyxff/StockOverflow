@@ -1,12 +1,8 @@
 package xmlparser
 
-import "sync"
-
 type Account struct {
-	ID        string               `xml:"id"`
-	Balance   float64              `xml:"balance"`
-	Positions map[string]*Position `xml:"positions"`
-	Mutex     sync.Mutex
+	ID      string `xml:"id,attr"`
+	Balance int    `xml:"balance,attr"`
 }
 
 type Position struct {

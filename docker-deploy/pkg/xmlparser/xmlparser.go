@@ -1,8 +1,10 @@
 package xmlparser
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
+	"reflect"
 )
 
 type Xmlparser struct {
@@ -10,32 +12,44 @@ type Xmlparser struct {
 
 // parse xml
 // return the xml struct
-func (parser *Xmlparser) Parse(xmlData []byte) (interface{}, error) {
-	var root struct {
-		XMLName  xml.Name  `xml:"account"`
-		Account  *Account  `xml:"account"`
-		Position *Position `xml:"position"`
-		Symbol   *Symbol   `xml:"symbol"`
-		Order    *Order    `xml:"order"`
-	}
-	err := xml.Unmarshal(xmlData, &root)
+func (parser *Xmlparser) Parse(xmlData []byte) (interface{}, reflect.Type, error) {
 
-	if err != nil {
-		fmt.Println("fail to parse xml: ", err)
-		return nil, err
-	}
+	decoder := xml.NewDecoder(bytes.NewReader(xmlData))
 
-	// return struct
-	switch root.XMLName.Local {
-	case "account":
-		return root.Account, nil
-	case "position":
-		return root.Position, nil
-	case "symbol":
-		return root.Symbol, nil
-	case "order":
-		return root.Order, nil
-	default:
-		return nil, fmt.Errorf("unknown root element: %s", root.XMLName.Local)
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			break
+		}
+
+		// get root element
+		startElement, ok := tok.(xml.StartElement)
+		fmt.Println(startElement.Name.Local)
+
+		if !ok {
+			fmt.Println("error in getting startElement")
+		}
+
+		switch startElement.Name.Local {
+		case "account":
+			{
+				var account Account
+				err := decoder.DecodeElement(&account, &startElement)
+				fmt.Println(account.ID)
+				fmt.Println(account.Balance)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				return account, reflect.TypeOf(account), err
+			}
+
+		default:
+			{
+				fmt.Println("default")
+				return nil, nil, fmt.Errorf("unknown root element: %s", startElement.Name.Local)
+			}
+		}
+
 	}
+	return nil, nil, nil
 }
