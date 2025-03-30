@@ -8,6 +8,8 @@ POSTGRES_PASSWORD=passw0rd
 POSTGRES_DB=stockoverflow
 POSTGRES_PORT=5432
 
+.PHONY: test testv
+
 # Build the application
 build:
 	@echo "Building $(BINARY_NAME)..."
@@ -27,4 +29,8 @@ clean:
 # Test the application
 test:
 	@echo "Running tests..."
-	go test -v ./...
+	go test ./test/integration/...
+
+testv:
+	@echo "Running tests..."
+	go test -v ./test/integration/...

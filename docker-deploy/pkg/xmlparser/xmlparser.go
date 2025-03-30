@@ -31,18 +31,24 @@ func (parser *Xmlparser) Parse(xmlData []byte) (interface{}, reflect.Type, error
 		}
 
 		switch startElement.Name.Local {
-		case "account":
+		case "create":
 			{
-				var account Account
-				err := decoder.DecodeElement(&account, &startElement)
-				fmt.Println(account.ID)
-				fmt.Println(account.Balance)
+				var create Create
+				err := decoder.DecodeElement(&create, &startElement)
 				if err != nil {
 					fmt.Println("error:", err)
 				}
-				return account, reflect.TypeOf(account), err
+				return create, reflect.TypeOf(create), err
 			}
-
+		case "transactions":
+			{
+				var transaction Transaction
+				err := decoder.DecodeElement(&transaction, &startElement)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				return transaction, reflect.TypeOf(transaction), err
+			}
 		default:
 			{
 				fmt.Println("default")
