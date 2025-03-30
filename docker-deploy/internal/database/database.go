@@ -106,6 +106,7 @@ func (dbm *DatabaseMaster) initOrderTable() {
     account_id VARCHAR(255) REFERENCES accounts(id),
     symbol VARCHAR(255) NOT NULL,
     amount NUMERIC(20, 6) NOT NULL,
+	price NUMERIC(20, 6) NOT NULL,
     status VARCHAR(10) NOT NULL,
     remaining NUMERIC(20, 6) NOT NULL,
     timestamp BIGINT NOT NULL,
