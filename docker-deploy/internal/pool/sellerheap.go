@@ -3,26 +3,36 @@ package pool
 import (
 	"container/heap"
 	"errors"
-
-	"github.com/shopspring/decimal"
+	"fmt"
 )
 
-type SellerHeap []decimal.Decimal
+type SellerHeap []Order
 
-func (heap SellerHeap) Len() int           { return len(heap) }
-func (heap SellerHeap) Less(i, j int) bool { return heap[i].Cmp(heap[j]) < 0 }
-func (heap SellerHeap) Swap(i, j int)      { heap[i], heap[j] = heap[j], heap[i] }
+func (heap SellerHeap) Len() int { return len(heap) }
+func (heap SellerHeap) Less(i, j int) bool {
+	diff := heap[i].price.Cmp(heap[j].price)
+	if diff < 0 {
+		return true
+	} else if diff == 0 {
+		return heap[i].time.Before(heap[j].time)
+	}
+	return false
+}
+func (heap SellerHeap) Swap(i, j int) { heap[i], heap[j] = heap[j], heap[i] }
 
 // push
-func (heap *SellerHeap) Push(ele interface{}) {
-	var d decimal.Decimal
-	switch t := ele.(type) {
-	case decimal.Decimal:
-		d = t
-	case float64:
-		d = decimal.NewFromFloat(t)
+func (sellers *SellerHeap) Push(ele interface{}) {
+	order, ok := ele.(Order)
+	if !ok {
+		fmt.Println("invalid argument in Push")
 	}
-	*heap = append(*heap, d)
+	*sellers = append(*sellers, order)
+}
+
+// safe push
+func (sellers *SellerHeap) SafePush(ele *Order) error {
+	heap.Push(sellers, *ele)
+	return nil
 }
 
 // pop

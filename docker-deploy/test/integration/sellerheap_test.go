@@ -4,19 +4,20 @@ import (
 	. "StockOverflow/internal/pool"
 	"container/heap"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
 
 func TestPush(t *testing.T) {
 	sellers := &SellerHeap{}
-	heap.Push(sellers, 1.0)
-	heap.Push(sellers, 0.5)
-	heap.Push(sellers, 2.0)
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), time.Now()))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(0.5), time.Now()))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
-	d := x.(decimal.Decimal)
-	if d.Cmp(decimal.NewFromFloat(0.5)) != 0 {
+	d := x.(Order)
+	if d.GetPrice().Cmp(decimal.NewFromFloat(0.5)) != 0 {
 		t.Errorf("should get 0.5 but %d", x)
 	}
 
@@ -31,5 +32,45 @@ func TestPop(t *testing.T) {
 	_, err := sellers.SafePop()
 	if err.Error() != "pop from empty heap" {
 		t.Errorf("should output error")
+	}
+}
+
+func TestSellerTime(t *testing.T) {
+	sellers := &SellerHeap{}
+
+	t1 := time.Now()
+	t2 := t1.Add(2 * time.Second)
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+
+	x := heap.Pop(sellers)
+	d := x.(Order)
+	if d.GetPrice().Cmp(decimal.NewFromFloat(1.0)) != 0 {
+		t.Errorf("should get 0.5 but %d", x)
+	}
+
+	if d.GetTime() != t1 {
+		t.Errorf("should get first t1")
+	}
+}
+
+func TestSellerTime2(t *testing.T) {
+	sellers := &SellerHeap{}
+
+	t1 := time.Now()
+	t2 := t1.Add(2 * time.Second)
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+
+	x := heap.Pop(sellers)
+	d := x.(Order)
+	if d.GetPrice().Cmp(decimal.NewFromFloat(1.0)) != 0 {
+		t.Errorf("should get 0.5 but %d", x)
+	}
+
+	if d.GetTime() != t1 {
+		t.Errorf("should get first t1")
 	}
 }
