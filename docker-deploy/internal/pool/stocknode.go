@@ -13,3 +13,14 @@ type StockNode struct {
 	sellers SellerHeap
 	buyers  BuyerHeap
 }
+
+// new
+func NewStockNode(symbol string) *StockNode {
+	return &StockNode{
+		symbol:  symbol,
+		next:    nil,
+		prev:    nil,
+		sellers: SellerHeap{},
+		buyers:  BuyerHeap{},
+	}
+}
