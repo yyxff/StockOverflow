@@ -9,7 +9,7 @@ import (
 )
 
 func TestBuyerPush(t *testing.T) {
-	buyers := &BuyerHeap{}
+	buyers := NewBuyerHeap(10)
 	buyers.SafePush(NewOrder(decimal.NewFromFloat(1.0), time.Now()))
 	buyers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
 	buyers.SafePush(NewOrder(decimal.NewFromFloat(0.5), time.Now()))
@@ -23,7 +23,7 @@ func TestBuyerPush(t *testing.T) {
 }
 
 func TestBuyerPop(t *testing.T) {
-	buyers := BuyerHeap{}
+	buyers := NewBuyerHeap(10)
 	// heap.Push(1.0)
 	// heap.Push(2.0)
 	// heap.Push(0.5)
@@ -35,7 +35,7 @@ func TestBuyerPop(t *testing.T) {
 }
 
 func TestBuyerTime(t *testing.T) {
-	buyers := &BuyerHeap{}
+	buyers := NewBuyerHeap(10)
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
@@ -55,7 +55,7 @@ func TestBuyerTime(t *testing.T) {
 }
 
 func TestBuyerTime2(t *testing.T) {
-	buyers := &BuyerHeap{}
+	buyers := NewBuyerHeap(10)
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
