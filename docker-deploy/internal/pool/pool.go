@@ -1,14 +1,25 @@
 package pool
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 // stock pool with lru
 // lru can be upgrade to young/old or lfu
 type Pool struct {
-	stockPool map[string]*StockNode
-	head      *StockNode
-	tail      *StockNode
-	limit     int
+	// map
+	stockPool sync.Map
+
+	// lru chain
+	head *StockNode
+	tail *StockNode
+
+	// max size
+	limit int
+
+	// current size
+	currentSize int
 }
 
 // ==============================public==============================
@@ -19,24 +30,25 @@ func (pool *Pool) NewPool(limit int) *Pool {
 		limit = 10
 	}
 	return &Pool{
-		limit:     limit,
-		stockPool: make(map[string]*StockNode),
+		limit:       limit,
+		currentSize: 0,
 	}
 }
 
 // get a node from pool
 func (pool *Pool) Get(sym string) (*StockNode, error) {
-	node, exists := pool.stockPool[sym]
+	value, exists := pool.stockPool.Load(sym)
 	if !exists {
 		return nil, errors.New("no " + sym + " in stock pool")
 	}
+	node := value.(*StockNode)
 	pool.touch(node)
 	return node, nil
 }
 
 // put a node into pool
 func (pool *Pool) Put(node *StockNode) error {
-	_, exists := pool.stockPool[node.symbol]
+	_, exists := pool.stockPool.Load(node.symbol)
 	if exists {
 		return errors.New(node.symbol + " already in stock pool")
 	}
@@ -60,13 +72,19 @@ func (pool *Pool) add(node *StockNode) {
 		pool.tail = node
 	}
 
-	pool.stockPool[node.symbol] = node
+	pool.stockPool.Store(node.symbol, node)
+	pool.currentSize++
 	pool.updateLRU()
 }
 
 // remove a sym
 func (pool *Pool) removeSym(sym string) {
-	node := pool.stockPool[sym]
+	value, exists := pool.stockPool.Load(sym)
+	if !exists {
+		return
+	}
+
+	node := value.(*StockNode)
 	pool.removeNode(node)
 }
 
@@ -88,7 +106,8 @@ func (pool *Pool) removeNode(node *StockNode) {
 		next.prev = prev
 	}
 
-	delete(pool.stockPool, node.symbol)
+	pool.stockPool.Delete(node.symbol)
+	pool.currentSize--
 }
 
 // touch node
@@ -107,7 +126,7 @@ func (pool *Pool) evict() {
 
 // check limit
 func (pool *Pool) updateLRU() {
-	for len(pool.stockPool) > pool.limit {
+	for pool.currentSize > pool.limit {
 		pool.evict()
 	}
 }

@@ -7,15 +7,19 @@ import (
 )
 
 type Order struct {
-	price decimal.Decimal
-	time  time.Time
+	id     uint
+	amount uint
+	price  decimal.Decimal
+	time   time.Time
 }
 
 // new
-func NewOrder(price decimal.Decimal, time time.Time) *Order {
+func NewOrder(id uint, amount uint, price decimal.Decimal, time time.Time) *Order {
 	return &Order{
-		price: price,
-		time:  time,
+		id:     id,
+		amount: amount,
+		price:  price,
+		time:   time,
 	}
 }
 
