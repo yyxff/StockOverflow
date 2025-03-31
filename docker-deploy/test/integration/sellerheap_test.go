@@ -34,3 +34,43 @@ func TestPop(t *testing.T) {
 		t.Errorf("should output error")
 	}
 }
+
+func TestSellerTime(t *testing.T) {
+	sellers := &SellerHeap{}
+
+	t1 := time.Now()
+	t2 := t1.Add(2 * time.Second)
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+
+	x := heap.Pop(sellers)
+	d := x.(Order)
+	if d.GetPrice().Cmp(decimal.NewFromFloat(1.0)) != 0 {
+		t.Errorf("should get 0.5 but %d", x)
+	}
+
+	if d.GetTime() != t1 {
+		t.Errorf("should get first t1")
+	}
+}
+
+func TestSellerTime2(t *testing.T) {
+	sellers := &SellerHeap{}
+
+	t1 := time.Now()
+	t2 := t1.Add(2 * time.Second)
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+
+	x := heap.Pop(sellers)
+	d := x.(Order)
+	if d.GetPrice().Cmp(decimal.NewFromFloat(1.0)) != 0 {
+		t.Errorf("should get 0.5 but %d", x)
+	}
+
+	if d.GetTime() != t1 {
+		t.Errorf("should get first t1")
+	}
+}
