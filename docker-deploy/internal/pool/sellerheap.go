@@ -1,6 +1,9 @@
 package pool
 
 import (
+	"container/heap"
+	"errors"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -12,7 +15,14 @@ func (heap SellerHeap) Swap(i, j int)      { heap[i], heap[j] = heap[j], heap[i]
 
 // push
 func (heap *SellerHeap) Push(ele interface{}) {
-	*heap = append(*heap, ele.(decimal.Decimal))
+	var d decimal.Decimal
+	switch t := ele.(type) {
+	case decimal.Decimal:
+		d = t
+	case float64:
+		d = decimal.NewFromFloat(t)
+	}
+	*heap = append(*heap, d)
 }
 
 // pop
@@ -21,4 +31,12 @@ func (heap *SellerHeap) Pop() interface{} {
 	ele := old[old.Len()-1]
 	*heap = old[0 : old.Len()-1]
 	return ele
+}
+
+// safe Pop
+func (sellers *SellerHeap) SafePop() (interface{}, error) {
+	if sellers.Len() == 0 {
+		return nil, errors.New("pop from empty heap")
+	}
+	return heap.Pop(sellers), nil
 }

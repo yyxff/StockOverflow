@@ -13,6 +13,17 @@ type Pool struct {
 
 // ==============================public==============================
 
+// new
+func (pool *Pool) NewPool(limit int) *Pool {
+	if limit < 10 {
+		limit = 10
+	}
+	return &Pool{
+		limit:     limit,
+		stockPool: make(map[string]*StockNode),
+	}
+}
+
 // get a node from pool
 func (pool *Pool) Get(sym string) (*StockNode, error) {
 	node, exists := pool.stockPool[sym]
