@@ -11,9 +11,9 @@ import (
 
 func TestPush(t *testing.T) {
 	sellers := NewSellerHeap(10)
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), time.Now()))
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(0.5), time.Now()))
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), time.Now()))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(0.5), time.Now()))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
 	d := x.(Order)
@@ -40,9 +40,9 @@ func TestSellerTime(t *testing.T) {
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t1))
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t2))
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
 	d := x.(Order)
@@ -60,9 +60,9 @@ func TestSellerTime2(t *testing.T) {
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t2))
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(1.0), t1))
-	sellers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
 	d := x.(Order)

@@ -10,9 +10,9 @@ import (
 
 func TestBuyerPush(t *testing.T) {
 	buyers := NewBuyerHeap(10)
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(1.0), time.Now()))
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(0.5), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(0.5), time.Now()))
 
 	x, _ := buyers.SafePop()
 	d := x.(Order)
@@ -39,9 +39,9 @@ func TestBuyerTime(t *testing.T) {
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(3.0), t1))
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(3.0), t2))
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t1))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t2))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x, _ := buyers.SafePop()
 	d := x.(Order)
@@ -59,9 +59,9 @@ func TestBuyerTime2(t *testing.T) {
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(3.0), t2))
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(3.0), t1))
-	buyers.SafePush(NewOrder(decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t2))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t1))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x, _ := buyers.SafePop()
 	d := x.(Order)
