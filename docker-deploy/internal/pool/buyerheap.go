@@ -4,8 +4,13 @@ type BuyerHeap struct {
 	*LimitedHeap[Order]
 }
 
-func NewBuyerHeap() *BuyerHeap {
-	return &BuyerHeap{&LimitedHeap[Order]{NewHeap(lessMax)}}
+func NewBuyerHeap(limit uint) *BuyerHeap {
+	return &BuyerHeap{
+		&LimitedHeap[Order]{
+			NewHeap(lessMax),
+			limit,
+		},
+	}
 }
 
 // implement compare
