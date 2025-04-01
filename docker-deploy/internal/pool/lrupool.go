@@ -5,15 +5,23 @@ import (
 	"sync"
 )
 
-// stock pool with lru
+// generic lru node
+type LruNode[T any] struct {
+	symbol string
+	value  T
+	prev   *LruNode[T]
+	next   *LruNode[T]
+}
+
+// generic lru chain
 // lru can be upgrade to young/old or lfu
-type Pool struct {
+type LruPool[T any] struct {
 	// map
-	stockPool sync.Map
+	nodePool sync.Map
 
 	// lru chain
-	head *StockNode
-	tail *StockNode
+	head *LruNode[T]
+	tail *LruNode[T]
 
 	// max size
 	limit int
@@ -25,30 +33,30 @@ type Pool struct {
 // ==============================public==============================
 
 // new
-func (pool *Pool) NewPool(limit int) *Pool {
+func newLruPool[T any](limit int) *LruPool[T] {
 	if limit < 10 {
 		limit = 10
 	}
-	return &Pool{
+	return &LruPool[T]{
 		limit:       limit,
 		currentSize: 0,
 	}
 }
 
 // get a node from pool
-func (pool *Pool) Get(sym string) (*StockNode, error) {
-	value, exists := pool.stockPool.Load(sym)
+func (pool *LruPool[T]) Get(sym string) (*LruNode[T], error) {
+	value, exists := pool.nodePool.Load(sym)
 	if !exists {
 		return nil, errors.New("no " + sym + " in stock pool")
 	}
-	node := value.(*StockNode)
+	node := value.(*LruNode[T])
 	pool.touch(node)
 	return node, nil
 }
 
 // put a node into pool
-func (pool *Pool) Put(node *StockNode) error {
-	_, exists := pool.stockPool.Load(node.symbol)
+func (pool *LruPool[T]) Put(node *LruNode[T]) error {
+	_, exists := pool.nodePool.Load(node.symbol)
 	if exists {
 		return errors.New(node.symbol + " already in stock pool")
 	}
@@ -59,7 +67,7 @@ func (pool *Pool) Put(node *StockNode) error {
 // ==============================private==============================
 
 // add a node to front
-func (pool *Pool) add(node *StockNode) {
+func (pool *LruPool[T]) add(node *LruNode[T]) {
 	node.next = pool.head
 	node.prev = nil
 
@@ -72,24 +80,24 @@ func (pool *Pool) add(node *StockNode) {
 		pool.tail = node
 	}
 
-	pool.stockPool.Store(node.symbol, node)
+	pool.nodePool.Store(node.symbol, node)
 	pool.currentSize++
 	pool.updateLRU()
 }
 
 // remove a sym
-func (pool *Pool) removeSym(sym string) {
-	value, exists := pool.stockPool.Load(sym)
+func (pool *LruPool[T]) removeSym(sym string) {
+	value, exists := pool.nodePool.Load(sym)
 	if !exists {
 		return
 	}
 
-	node := value.(*StockNode)
+	node := value.(*LruNode[T])
 	pool.removeNode(node)
 }
 
 // remove a node
-func (pool *Pool) removeNode(node *StockNode) {
+func (pool *LruPool[T]) removeNode(node *LruNode[T]) {
 	prev := node.prev
 	next := node.next
 
@@ -106,26 +114,26 @@ func (pool *Pool) removeNode(node *StockNode) {
 		next.prev = prev
 	}
 
-	pool.stockPool.Delete(node.symbol)
+	pool.nodePool.Delete(node.symbol)
 	pool.currentSize--
 }
 
 // touch node
 // move it to front
-func (pool *Pool) touch(node *StockNode) {
+func (pool *LruPool[T]) touch(node *LruNode[T]) {
 	pool.removeNode(node)
 	pool.add(node)
 }
 
 // evict node
-func (pool *Pool) evict() {
+func (pool *LruPool[T]) evict() {
 	if pool.tail != nil {
 		pool.removeNode(pool.tail)
 	}
 }
 
 // check limit
-func (pool *Pool) updateLRU() {
+func (pool *LruPool[T]) updateLRU() {
 	for pool.currentSize > pool.limit {
 		pool.evict()
 	}
