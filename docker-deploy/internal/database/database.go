@@ -47,7 +47,7 @@ func (dbm *DatabaseMaster) CreateDB() {
 		fmt.Println("create db successfully!")
 	} else {
 		fmt.Println("db exists")
-		connStr := dbm.ConnStr + "host=localhost port=5432 user=postgres password=passw0rd dbname=stockoverflow sslmode=disable"
+		connStr := dbm.ConnStr + " dbname=" + dbm.DbName
 		db, err := sql.Open("postgres", connStr)
 		if err != nil {
 			fmt.Println("failed to switch to stockoverflow")

@@ -19,7 +19,7 @@ func main() {
 	// Initialize database connection
 	dbm := database.DatabaseMaster{
 		ConnStr: getDBConnStr(),
-		DbName:  "stockoverflow",
+		DbName:  getEnvOrDefault("DB_NAME", "stockoverflow"),
 	}
 
 	// Connect to database
