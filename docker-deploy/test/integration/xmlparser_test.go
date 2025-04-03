@@ -35,7 +35,8 @@ import (
 func TestParseCreate(t *testing.T) {
 
 	str :=
-		`<create>
+		`<?xml version="1.0" encoding="UTF-8"?>
+<create>
 	<account id="123456" balance="1000"/>
 	<symbol sym="SPY">
 		<account id="123456">100000</account>
