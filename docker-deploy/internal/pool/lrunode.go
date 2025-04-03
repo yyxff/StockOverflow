@@ -53,3 +53,8 @@ func (node *LruNode[T]) Unlock() {
 func (node *LruNode[T]) IsEvictable() bool {
 	return node.pin.Load() == 0
 }
+
+// getter for value
+func (node *LruNode[T]) GetValue() T {
+	return node.value
+}
