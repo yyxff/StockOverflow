@@ -55,6 +55,7 @@ func TestParseCreate(t *testing.T) {
 	fmt.Println(xmlData)
 	fmt.Println(dataType)
 	create, ok := xmlData.(Create)
+	// print(reflect.TypeOf(create.Accounts[0].Balance))
 	if !ok {
 		t.Errorf("failed to cast to accout")
 	}

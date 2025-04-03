@@ -1,6 +1,10 @@
 package xmlparser
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+
+	"github.com/shopspring/decimal"
+)
 
 type Create struct {
 	XMLName  xml.Name  `xml:"create"`
@@ -19,9 +23,9 @@ type Transaction struct {
 
 // Order represents an order request
 type Order struct {
-	Symbol     string  `xml:"sym,attr"`
-	Amount     int     `xml:"amount,attr"`
-	LimitPrice float64 `xml:"limit,attr"`
+	Symbol     string          `xml:"sym,attr"`
+	Amount     int             `xml:"amount,attr"`
+	LimitPrice decimal.Decimal `xml:"limit,attr"`
 }
 
 // Query represents an order query
@@ -34,8 +38,8 @@ type Cancel struct {
 	ID string `xml:"id,attr"`
 }
 type Account struct {
-	ID      string `xml:"id,attr"`
-	Balance int    `xml:"balance,attr"`
+	ID      string          `xml:"id,attr"`
+	Balance decimal.Decimal `xml:"balance,attr"`
 }
 
 type Position struct {
@@ -46,7 +50,7 @@ type Position struct {
 type Symbol struct {
 	Symbol   string `xml:"sym,attr"`
 	Accounts []struct {
-		ID      string `xml:"id,attr"`
-		Balance string `xml:",chardata"`
+		ID      string          `xml:"id,attr"`
+		Balance decimal.Decimal `xml:",chardata"`
 	} `xml:"account"`
 }
