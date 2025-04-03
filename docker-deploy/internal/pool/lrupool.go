@@ -67,6 +67,10 @@ func (pool *LruPool[T]) Put(node *LruNode[T]) error {
 	return nil
 }
 
+func (pool *LruPool[T]) GetSize() int {
+	return pool.currentSize
+}
+
 // ==============================private==============================
 
 // add a node to front
