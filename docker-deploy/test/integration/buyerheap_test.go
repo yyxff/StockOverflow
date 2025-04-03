@@ -73,3 +73,29 @@ func TestBuyerTime2(t *testing.T) {
 		t.Errorf("should get first t1")
 	}
 }
+
+func TestUpdate(t *testing.T) {
+	buyers := NewBuyerHeap(10)
+
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+
+	if buyers.Len() != 9 {
+		t.Errorf("should get 9 but %d", buyers.Len())
+	}
+
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+
+	if buyers.Len() != 5 {
+		t.Errorf("should get 5 but %d", buyers.Len())
+	}
+
+}
