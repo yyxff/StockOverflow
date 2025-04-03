@@ -29,6 +29,15 @@ func (node *LruNode[T]) Lock() {
 	node.pin.Add(1)
 }
 
+// try write lock
+func (node *LruNode[T]) TryLock() bool {
+	if !node.pin.CompareAndSwap(0, 1) {
+		return false
+	}
+	node.rw.Lock()
+	return true
+}
+
 // unlock read
 func (node *LruNode[T]) RUnlock() {
 	node.rw.RUnlock()
