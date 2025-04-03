@@ -48,9 +48,11 @@ type Position struct {
 }
 
 type Symbol struct {
-	Symbol   string `xml:"sym,attr"`
-	Accounts []struct {
-		ID      string          `xml:"id,attr"`
-		Balance decimal.Decimal `xml:",chardata"`
-	} `xml:"account"`
+	Symbol   string            `xml:"sym,attr"`
+	Accounts []AccountInSymbol `xml:"account"`
+}
+
+type AccountInSymbol struct {
+	ID      string          `xml:"id,attr"`
+	Balance decimal.Decimal `xml:",chardata"`
 }
