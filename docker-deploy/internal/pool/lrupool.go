@@ -104,13 +104,12 @@ func (pool *LruPool[T]) removeNode(node *LruNode[T]) {
 
 	// if was read or written by other
 	// cancel remove
-	if !node.IsEvictable() {
-		return
-	}
 
 	// if no other is using this node
 	// get a write lock then remove it
-	node.Lock()
+	if !node.TryLock() {
+		return
+	}
 	prev := node.prev
 	next := node.next
 
