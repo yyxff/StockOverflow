@@ -5,19 +5,14 @@ import (
 	"sync"
 )
 
-// generic lru node
-type LruNode[T any] struct {
-	symbol string
-	value  T
-	prev   *LruNode[T]
-	next   *LruNode[T]
-}
-
 // generic lru chain
 // lru can be upgrade to young/old or lfu
 type LruPool[T any] struct {
 	// map
 	nodePool sync.Map
+
+	// mutex
+	mu sync.Mutex
 
 	// lru chain
 	head *LruNode[T]
@@ -45,22 +40,30 @@ func newLruPool[T any](limit int) *LruPool[T] {
 
 // get a node from pool
 func (pool *LruPool[T]) Get(sym string) (*LruNode[T], error) {
+	pool.mu.Lock()
+
 	value, exists := pool.nodePool.Load(sym)
 	if !exists {
 		return nil, errors.New("no " + sym + " in stock pool")
 	}
 	node := value.(*LruNode[T])
 	pool.touch(node)
+
+	pool.mu.Unlock()
 	return node, nil
 }
 
 // put a node into pool
 func (pool *LruPool[T]) Put(node *LruNode[T]) error {
+	pool.mu.Lock()
+
 	_, exists := pool.nodePool.Load(node.symbol)
 	if exists {
 		return errors.New(node.symbol + " already in stock pool")
 	}
 	pool.add(node)
+
+	pool.mu.Unlock()
 	return nil
 }
 
@@ -98,6 +101,16 @@ func (pool *LruPool[T]) removeSym(sym string) {
 
 // remove a node
 func (pool *LruPool[T]) removeNode(node *LruNode[T]) {
+
+	// if was read or written by other
+	// cancel remove
+	if !node.IsEvictable() {
+		return
+	}
+
+	// if no other is using this node
+	// get a write lock then remove it
+	node.Lock()
 	prev := node.prev
 	next := node.next
 
@@ -115,12 +128,17 @@ func (pool *LruPool[T]) removeNode(node *LruNode[T]) {
 	}
 
 	pool.nodePool.Delete(node.symbol)
+
+	node.Unlock()
 	pool.currentSize--
 }
 
 // touch node
 // move it to front
 func (pool *LruPool[T]) touch(node *LruNode[T]) {
+	if node == pool.head {
+		return
+	}
 	pool.removeNode(node)
 	pool.add(node)
 }

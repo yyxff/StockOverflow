@@ -26,10 +26,24 @@ func (h *LimitedHeap[T]) SafePush(ele *Order) error {
 	return nil
 }
 
+// update heap to keep it small
 func (h *LimitedHeap[T]) updateHeap() {
 	if uint(h.Len()) > h.maxSize {
 		//  todo set minsize
-		h.data = h.data[:h.maxSize/2]
+		newSize := h.maxSize / 2
+		var i uint
+		var data []T
+		for i = 0; i < newSize; i++ {
+			ele, err := h.SafePop()
+			x := ele.(T)
+			if err != nil {
+
+			} else {
+				data = append(data, x)
+			}
+
+		}
+		h.data = data
 		heap.Init(h)
 	}
 }
