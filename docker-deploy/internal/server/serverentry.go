@@ -31,7 +31,7 @@ func (serverEntry *ServerEntry) Enter() {
 
 	// Create and start the server
 	server := NewServer(logger)
-
+	server.SetDB(dbm.Db)
 	// Start server in a goroutine
 	go func() {
 		logger.Println("Starting exchange server on port 12345...")
