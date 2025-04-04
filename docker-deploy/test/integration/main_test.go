@@ -83,14 +83,12 @@ func TestMain(t *testing.T) {
 	// prepare xml
 	item := &Create{
 		XMLName: xml.Name{Local: "create"},
-		Accounts: []Account{
-			{
+		Children: []any{
+			Account{
 				ID:      "testuserid",
 				Balance: decimal.NewFromFloat(100),
 			},
-		},
-		Symbols: []Symbol{
-			{
+			Symbol{
 				Symbol: "duke",
 				Accounts: []AccountInSymbol{
 					{
