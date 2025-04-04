@@ -7,18 +7,15 @@ import (
 )
 
 type Create struct {
-	XMLName  xml.Name  `xml:"create"`
-	Accounts []Account `xml:"account"`
-	Symbols  []Symbol  `xml:"symbol"`
+	XMLName  xml.Name `xml:"create"`
+	Children []any    `xml:"any"`
 }
 
 // Transaction represents the root element for transactions operations
 type Transaction struct {
-	XMLName xml.Name `xml:"transactions"`
-	ID      string   `xml:"id,attr"`
-	Orders  []Order  `xml:"order"`
-	Queries []Query  `xml:"query"`
-	Cancels []Cancel `xml:"cancel"`
+	XMLName  xml.Name `xml:"transactions"`
+	ID       string   `xml:"id,attr"`
+	Children []any    `xm':"any"`
 }
 
 // Order represents an order request
