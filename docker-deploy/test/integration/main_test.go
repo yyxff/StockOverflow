@@ -2,27 +2,25 @@ package test
 
 import (
 	"StockOverflow/internal/server"
-	. "StockOverflow/pkg/xmlparser"
+	"bufio"
 	"database/sql"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/shopspring/decimal"
 )
 
-func setupMockDB(t *testing.T) *sql.DB {
-	db, _, err := sqlmock.New()
+func setupMockDB(t *testing.T) (*sql.DB, *sqlmock.Sqlmock) {
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create mock database: %v", err)
 	}
-	defer db.Close()
-	return db
+	return db, &mock
 
 }
 
@@ -35,74 +33,79 @@ func captureTCPResponse(xmlData []byte) (string, error) {
 	defer conn.Close()
 
 	// read the datasize
-	dataSize := int32(len(xmlData))
+	dataSize := len(xmlData)
+	num := strconv.Itoa(dataSize) + "\n"
+	xmlData = append([]byte(num), xmlData...)
 
-	num := string(dataSize)
-
-	// 先发送字节数
-	_, err = conn.Write([]byte(num))
-	if err != nil {
-		return "", fmt.Errorf("failed to send XML data: %v", err)
-	}
-
-	_, err = conn.Write([]byte{'\n'})
-	if err != nil {
-		return "", fmt.Errorf("failed to send XML data: %v", err)
-	}
-
+	// send data
 	_, err = conn.Write(xmlData)
 	if err != nil {
 		return "", fmt.Errorf("failed to send XML data: %v", err)
 	}
 
-	var response [1024]byte
-	n, err := conn.Read(response[:])
+	reader := bufio.NewReader(conn)
+	// 1. 读取长度（直到 \n）
+	lenLine, err := reader.ReadString('\n')
 	if err != nil {
+		fmt.Println("failed to read length:", err)
 		return "", err
 	}
 
-	log.Printf("Expected data size: %d bytes", dataSize)
-
-	// 根据字节数读取 XML 数据
-	data := make([]byte, dataSize)
-	_, err = io.ReadFull(conn, data)
+	// 去掉 '\n' 并转为整数
+	lengthStr := lenLine[:len(lenLine)-1]
+	length, err := strconv.Atoi(lengthStr)
 	if err != nil {
-		log.Printf("Failed to read XML data: %v", err)
+		fmt.Println("length format problem:", err)
 		return "", err
 	}
 
-	return string(response[:n]), nil
+	// 2. 读取指定字节数的 XML
+	xmlData = make([]byte, length)
+	_, err = io.ReadFull(reader, xmlData)
+	if err != nil {
+		fmt.Println("failed to read xml:", err)
+		return "", err
+	}
+
+	return string(xmlData), nil
 }
-func TestMain(t *testing.T) {
+func TestMainCreate(t *testing.T) {
+
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	(*mock).ExpectQuery("SELECT EXISTS\\(SELECT 1 FROM accounts WHERE id = \\$1\\)").
+		WithArgs("123456").
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
+	(*mock).ExpectExec("INSERT INTO accounts \\(id, balance\\) VALUES \\(\\$1, \\$2\\)").
+		WithArgs("123456", "1000").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	(*mock).ExpectQuery("SELECT EXISTS\\(SELECT 1 FROM positions WHERE account_id = \\$1 AND symbol = \\$2\\)").
+		WithArgs("123456", "SPY").
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+
+	(*mock).ExpectExec("UPDATE positions SET amount = \\$1 WHERE account_id = \\$2 AND symbol = \\$3").
+		WithArgs("100000", "123456", "SPY").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	serverEntry := server.ServerEntry{}
-	go serverEntry.Enter(setupMockDB(t))
+	go serverEntry.Enter(db)
+	// go serverEntry.Enter(nil)
 
 	// wait it to start
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// prepare xml
-	item := &Create{
-		XMLName: xml.Name{Local: "create"},
-		Children: []any{
-			Account{
-				ID:      "testuserid",
-				Balance: decimal.NewFromFloat(100),
-			},
-			Symbol{
-				Symbol: "duke",
-				Accounts: []AccountInSymbol{
-					{
-						ID:      "testuserid",
-						Balance: decimal.NewFromFloat(999),
-					},
-				},
-			},
-		},
-	}
-	xmlData, err := xml.Marshal(item)
-	if err != nil {
-		t.Fatalf("Failed to marshal XML: %v", err)
-	}
+	item := `<?xml version="1.0" encoding="UTF-8"?>
+<create>
+<account id="123456" balance="1000"/>
+<symbol sym="SPY">
+<account id="123456">100000</account>
+</symbol>
+</create>`
+
+	xmlData := []byte(item)
 
 	fmt.Println("ready to send xml")
 	// send it by tcp
@@ -112,7 +115,7 @@ func TestMain(t *testing.T) {
 	}
 	fmt.Println("get response")
 
-	expectedResponse := "Received item with value: 100"
+	expectedResponse := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<results>\n  <created id=\"123456\"></created>\n  <created id=\"123456\" sym=\"SPY\"></created>\n</results>"
 	if response != expectedResponse {
 		t.Errorf("Expected response %q, but got %q", expectedResponse, response)
 	}
