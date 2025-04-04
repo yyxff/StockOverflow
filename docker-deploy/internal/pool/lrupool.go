@@ -41,6 +41,7 @@ func newLruPool[T any](limit int) *LruPool[T] {
 // get a node from pool
 func (pool *LruPool[T]) Get(sym string) (*LruNode[T], error) {
 	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	value, exists := pool.nodePool.Load(sym)
 	if !exists {
@@ -49,13 +50,13 @@ func (pool *LruPool[T]) Get(sym string) (*LruNode[T], error) {
 	node := value.(*LruNode[T])
 	pool.touch(node)
 
-	pool.mu.Unlock()
 	return node, nil
 }
 
 // put a node into pool
 func (pool *LruPool[T]) Put(node *LruNode[T]) error {
 	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	_, exists := pool.nodePool.Load(node.symbol)
 	if exists {
@@ -63,7 +64,6 @@ func (pool *LruPool[T]) Put(node *LruNode[T]) error {
 	}
 	pool.add(node)
 
-	pool.mu.Unlock()
 	return nil
 }
 
