@@ -6,6 +6,7 @@ import (
 	"StockOverflow/pkg/xmlresponse"
 	"encoding/xml"
 	"fmt"
+	"reflect"
 
 	"github.com/shopspring/decimal"
 )
@@ -46,113 +47,19 @@ func (s *Server) handleTransactions(transactionData xmlparser.Transaction) ([]by
 		s.accountsMutex.Unlock()
 	}
 
-	// Process orders
-	for _, orderRequest := range transactionData.Orders {
-		// Generate order ID
-		orderID := s.generateOrderID()
-		s.logger.Printf("Processing order: %s, symbol: %s, amount: %d, price: %s",
-			orderID, orderRequest.Symbol, orderRequest.Amount, orderRequest.LimitPrice.String())
-
-		// Convert amount to decimal for calculations
-		amount := decimal.NewFromInt(int64(orderRequest.Amount))
-
-		// Negative amount means sell, positive means buy
-		isBuy := orderRequest.Amount > 0
-
-		// Validate and reserve funds/shares
-		errorMsg := s.validateAndReserve(account, orderRequest.Symbol, amount, orderRequest.LimitPrice, isBuy)
-
-		// If there was an error, add it to response and continue
-		if errorMsg != "" {
-			response.Errors = append(response.Errors, xmlresponse.Error{
-				Symbol:  orderRequest.Symbol,
-				Amount:  float64(orderRequest.Amount),
-				Limit:   float64(orderRequest.LimitPrice.InexactFloat64()),
-				Message: errorMsg,
-			})
-			continue
+	// process ele in order
+	for _, child := range transactionData.Children {
+		switch ele := child.(type) {
+		case xmlparser.Order:
+			s.processOrder(&ele, account, &response)
+		case xmlparser.Query:
+			s.processQuery(&ele, &response)
+		case xmlparser.Cancel:
+			s.processCancel(&ele, &response)
+		default:
+			s.logger.Fatalf("unknown type in children: %T", reflect.TypeOf(ele))
 		}
 
-		// Place the order in the exchange
-		err := s.exchange.PlaceOrder(orderID, account.ID, orderRequest.Symbol, amount, orderRequest.LimitPrice)
-		if err != nil {
-			s.logger.Printf("Failed to place order: %v", err)
-			response.Errors = append(response.Errors, xmlresponse.Error{
-				Symbol:  orderRequest.Symbol,
-				Amount:  float64(orderRequest.Amount),
-				Limit:   float64(orderRequest.LimitPrice.InexactFloat64()),
-				Message: fmt.Sprintf("Exchange error: %v", err),
-			})
-			continue
-		}
-
-		// Add success response
-		response.Opened = append(response.Opened, xmlresponse.Opened{
-			Symbol: orderRequest.Symbol,
-			Amount: float64(orderRequest.Amount),
-			Limit:  float64(orderRequest.LimitPrice.InexactFloat64()),
-			ID:     orderID,
-		})
-
-		s.logger.Printf("Successfully created order %s for %s %s at %s",
-			orderID, amount.String(), orderRequest.Symbol, orderRequest.LimitPrice.String())
-	}
-
-	// Process queries
-	for _, query := range transactionData.Queries {
-		s.logger.Printf("Processing query for order: %s", query.ID)
-
-		// Get order status from exchange
-		order, executions, err := s.exchange.GetOrderStatus(query.ID)
-		if err != nil {
-			s.logger.Printf("Failed to get order status: %v", err)
-			response.Errors = append(response.Errors, xmlresponse.Error{
-				ID:      query.ID,
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		// Convert to response format
-		status := createStatusResponse(query.ID, order, executions)
-
-		// Add to response
-		response.Statuses = append(response.Statuses, status)
-		s.logger.Printf("Processed query for order %s with status %s", query.ID, order.Status)
-	}
-
-	// Process cancels
-	for _, cancel := range transactionData.Cancels {
-		s.logger.Printf("Processing cancel for order: %s", cancel.ID)
-
-		// Cancel the order in the exchange
-		err := s.exchange.CancelOrder(cancel.ID)
-		if err != nil {
-			s.logger.Printf("Failed to cancel order: %v", err)
-			response.Errors = append(response.Errors, xmlresponse.Error{
-				ID:      cancel.ID,
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		// Get updated order status
-		order, executions, err := s.exchange.GetOrderStatus(cancel.ID)
-		if err != nil {
-			s.logger.Printf("Failed to get order status after cancel: %v", err)
-			response.Errors = append(response.Errors, xmlresponse.Error{
-				ID:      cancel.ID,
-				Message: fmt.Sprintf("Order was canceled but error retrieving status: %v", err),
-			})
-			continue
-		}
-
-		// Create canceled response
-		canceled := createCanceledResponse(cancel.ID, order, executions)
-
-		// Add to response
-		response.Canceled = append(response.Canceled, canceled)
-		s.logger.Printf("Successfully canceled order %s", cancel.ID)
 	}
 
 	// Marshal response to XML
@@ -279,29 +186,36 @@ func createCanceledResponse(orderID string, order *database.Order, executions []
 }
 
 // generateAccountNotFoundErrors generates errors for all operations when account doesn't exist
-func generateAccountNotFoundErrors(response *xmlresponse.Results, data xmlparser.Transaction) {
-	for _, order := range data.Orders {
-		response.Errors = append(response.Errors, xmlresponse.Error{
-			Symbol:  order.Symbol,
-			Amount:  float64(order.Amount),
-			Limit:   float64(order.LimitPrice.InexactFloat64()),
-			Message: "Account not found",
-		})
+func generateAccountNotFoundErrors(response *xmlresponse.Results, transaction xmlparser.Transaction) {
+
+	for _, child := range transaction.Children {
+		switch ele := child.(type) {
+		case xmlparser.Order:
+			{
+				response.Errors = append(response.Errors, xmlresponse.Error{
+					Symbol:  ele.Symbol,
+					Amount:  float64(ele.Amount),
+					Limit:   float64(ele.LimitPrice.InexactFloat64()),
+					Message: "Account not found",
+				})
+			}
+		case xmlparser.Query:
+			{
+				response.Errors = append(response.Errors, xmlresponse.Error{
+					ID:      ele.ID,
+					Message: "Account not found",
+				})
+			}
+		case xmlparser.Cancel:
+			{
+				response.Errors = append(response.Errors, xmlresponse.Error{
+					ID:      ele.ID,
+					Message: "Account not found",
+				})
+			}
+		}
 	}
 
-	for _, query := range data.Queries {
-		response.Errors = append(response.Errors, xmlresponse.Error{
-			ID:      query.ID,
-			Message: "Account not found",
-		})
-	}
-
-	for _, cancel := range data.Cancels {
-		response.Errors = append(response.Errors, xmlresponse.Error{
-			ID:      cancel.ID,
-			Message: "Account not found",
-		})
-	}
 }
 
 // marshalResponse marshals a response to XML
@@ -313,4 +227,110 @@ func marshalResponse(response xmlresponse.Results) ([]byte, error) {
 	}
 
 	return append(xmlHeader, xmlBody...), nil
+}
+
+func (s *Server) processOrder(orderRequest *xmlparser.Order, account *AccountNode, response *xmlresponse.Results) {
+	// Generate order ID
+	orderID := s.generateOrderID()
+	s.logger.Printf("Processing order: %s, symbol: %s, amount: %d, price: %s",
+		orderID, orderRequest.Symbol, orderRequest.Amount, orderRequest.LimitPrice.String())
+
+	// Convert amount to decimal for calculations
+	amount := decimal.NewFromInt(int64(orderRequest.Amount))
+
+	// Negative amount means sell, positive means buy
+	isBuy := orderRequest.Amount > 0
+
+	// Validate and reserve funds/shares
+	errorMsg := s.validateAndReserve(account, orderRequest.Symbol, amount, orderRequest.LimitPrice, isBuy)
+
+	// If there was an error, add it to response and continue
+	if errorMsg != "" {
+		response.Errors = append(response.Errors, xmlresponse.Error{
+			Symbol:  orderRequest.Symbol,
+			Amount:  float64(orderRequest.Amount),
+			Limit:   float64(orderRequest.LimitPrice.InexactFloat64()),
+			Message: errorMsg,
+		})
+		return
+	}
+
+	// Place the order in the exchange
+	err := s.exchange.PlaceOrder(orderID, account.ID, orderRequest.Symbol, amount, orderRequest.LimitPrice)
+	if err != nil {
+		s.logger.Printf("Failed to place order: %v", err)
+		response.Errors = append(response.Errors, xmlresponse.Error{
+			Symbol:  orderRequest.Symbol,
+			Amount:  float64(orderRequest.Amount),
+			Limit:   float64(orderRequest.LimitPrice.InexactFloat64()),
+			Message: fmt.Sprintf("Exchange error: %v", err),
+		})
+		return
+	}
+
+	// Add success response
+	response.Opened = append(response.Opened, xmlresponse.Opened{
+		Symbol: orderRequest.Symbol,
+		Amount: float64(orderRequest.Amount),
+		Limit:  float64(orderRequest.LimitPrice.InexactFloat64()),
+		ID:     orderID,
+	})
+
+	s.logger.Printf("Successfully created order %s for %s %s at %s",
+		orderID, amount.String(), orderRequest.Symbol, orderRequest.LimitPrice.String())
+}
+
+func (s *Server) processQuery(query *xmlparser.Query, response *xmlresponse.Results) {
+	s.logger.Printf("Processing query for order: %s", query.ID)
+
+	// Get order status from exchange
+	order, executions, err := s.exchange.GetOrderStatus(query.ID)
+	if err != nil {
+		s.logger.Printf("Failed to get order status: %v", err)
+		response.Errors = append(response.Errors, xmlresponse.Error{
+			ID:      query.ID,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Convert to response format
+	status := createStatusResponse(query.ID, order, executions)
+
+	// Add to response
+	response.Statuses = append(response.Statuses, status)
+	s.logger.Printf("Processed query for order %s with status %s", query.ID, order.Status)
+}
+
+func (s *Server) processCancel(cancel *xmlparser.Cancel, response *xmlresponse.Results) {
+	s.logger.Printf("Processing cancel for order: %s", cancel.ID)
+
+	// Cancel the order in the exchange
+	err := s.exchange.CancelOrder(cancel.ID)
+	if err != nil {
+		s.logger.Printf("Failed to cancel order: %v", err)
+		response.Errors = append(response.Errors, xmlresponse.Error{
+			ID:      cancel.ID,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Get updated order status
+	order, executions, err := s.exchange.GetOrderStatus(cancel.ID)
+	if err != nil {
+		s.logger.Printf("Failed to get order status after cancel: %v", err)
+		response.Errors = append(response.Errors, xmlresponse.Error{
+			ID:      cancel.ID,
+			Message: fmt.Sprintf("Order was canceled but error retrieving status: %v", err),
+		})
+		return
+	}
+
+	// Create canceled response
+	canceled := createCanceledResponse(cancel.ID, order, executions)
+
+	// Add to response
+	response.Canceled = append(response.Canceled, canceled)
+	s.logger.Printf("Successfully canceled order %s", cancel.ID)
 }
