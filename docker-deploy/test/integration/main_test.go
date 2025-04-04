@@ -3,7 +3,7 @@ package test
 import (
 	"StockOverflow/internal/server"
 	. "StockOverflow/pkg/xmlparser"
-	"encoding/binary"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -12,8 +12,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/shopspring/decimal"
 )
+
+func setupMockDB(t *testing.T) *sql.DB {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create mock database: %v", err)
+	}
+	defer db.Close()
+	return db
+
+}
 
 // get response
 func captureTCPResponse(xmlData []byte) (string, error) {
@@ -26,10 +37,17 @@ func captureTCPResponse(xmlData []byte) (string, error) {
 	// read the datasize
 	dataSize := int32(len(xmlData))
 
+	num := string(dataSize)
+
 	// 先发送字节数
-	err = binary.Write(conn, binary.BigEndian, dataSize)
+	_, err = conn.Write([]byte(num))
 	if err != nil {
-		return "", fmt.Errorf("failed to send data size: %v", err)
+		return "", fmt.Errorf("failed to send XML data: %v", err)
+	}
+
+	_, err = conn.Write([]byte{'\n'})
+	if err != nil {
+		return "", fmt.Errorf("failed to send XML data: %v", err)
 	}
 
 	_, err = conn.Write(xmlData)
@@ -57,7 +75,7 @@ func captureTCPResponse(xmlData []byte) (string, error) {
 }
 func TestMain(t *testing.T) {
 	serverEntry := server.ServerEntry{}
-	go serverEntry.Enter()
+	go serverEntry.Enter(setupMockDB(t))
 
 	// wait it to start
 	time.Sleep(2 * time.Second)

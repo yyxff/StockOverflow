@@ -53,7 +53,7 @@ func (s *Server) handleCreate(createData xmlparser.Create) ([]byte, error) {
 		node, err := s.stockPool.Get(symbol.Symbol)
 		if err != nil {
 			// Symbol doesn't exist in pool, create a new node
-			stockNode = pool.NewStockNode(symbol.Symbol)
+			stockNode = pool.NewStockNode(symbol.Symbol, 10)
 			err = s.stockPool.Put(stockNode)
 			if err != nil {
 				s.logger.Printf("Warning: Failed to add stock node to pool: %v", err)

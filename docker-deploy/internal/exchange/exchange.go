@@ -59,7 +59,7 @@ func (e *Exchange) MatchOrder(orderID string, accountID string, symbol string, i
 	stockNode, err := e.stockPool.Get(symbol)
 	if err != nil {
 		// Symbol doesn't exist in pool, create a new node
-		stockNode = pool.NewStockNode(symbol)
+		stockNode = pool.NewStockNode(symbol, 10)
 		err = e.stockPool.Put(stockNode)
 		if err != nil {
 			e.logger.Printf("Warning: Failed to add stock node to pool: %v", err)

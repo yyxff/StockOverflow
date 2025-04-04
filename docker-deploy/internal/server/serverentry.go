@@ -2,6 +2,7 @@ package server
 
 import (
 	"StockOverflow/internal/database"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -13,25 +14,33 @@ import (
 
 type ServerEntry struct{}
 
-func (serverEntry *ServerEntry) Enter() {
+func (serverEntry *ServerEntry) Enter(mockDB *sql.DB) {
 	// Setup logger
 	logger := log.New(os.Stdout, "EXCHANGE: ", log.LstdFlags|log.Lshortfile)
 
-	// Initialize database connection
-	dbm := database.DatabaseMaster{
-		ConnStr: getDBConnStr(),
-		DbName:  getEnvOrDefault("DB_NAME", "stockoverflow"),
-	}
-
-	// Connect to database
-	logger.Println("Connecting to database...")
-	dbm.Connect()
-	dbm.CreateDB()
-	dbm.Init()
-
 	// Create and start the server
 	server := NewServer(logger)
-	server.SetDB(dbm.Db)
+
+	// link to db if no mockdb
+	if mockDB == nil {
+		// Initialize database connection
+		dbm := database.DatabaseMaster{
+			ConnStr: getDBConnStr(),
+			DbName:  getEnvOrDefault("DB_NAME", "stockoverflow"),
+		}
+
+		// Connect to database
+		logger.Println("Connecting to database...")
+		dbm.Connect()
+		dbm.CreateDB()
+		dbm.Init()
+		server.SetDB(dbm.Db)
+
+	} else {
+		// or use mock db
+		server.SetDB(mockDB)
+	}
+
 	// Start server in a goroutine
 	go func() {
 		logger.Println("Starting exchange server on port 12345...")

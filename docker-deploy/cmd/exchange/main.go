@@ -6,5 +6,5 @@ import (
 
 func main() {
 	serverEntry := server.ServerEntry{}
-	serverEntry.Enter()
+	serverEntry.Enter(nil)
 }
