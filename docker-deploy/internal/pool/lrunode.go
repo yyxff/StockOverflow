@@ -11,21 +11,20 @@ type LruNode[T any] struct {
 	value  T
 	prev   *LruNode[T]
 	next   *LruNode[T]
+
 	// rw lock
-	rw sync.RWMutex
+	// rw sync.RWMutex
+
+	// mutex lock
+	mu sync.Mutex
+
 	// pin
 	pin atomic.Int64
 }
 
-// get read lock
-func (node *LruNode[T]) RLock() {
-	node.rw.RLock()
-	node.pin.Add(1)
-}
-
-// get write lock
+// get mutex lock
 func (node *LruNode[T]) Lock() {
-	node.rw.Lock()
+	node.mu.Lock()
 	node.pin.Add(1)
 }
 
@@ -34,19 +33,13 @@ func (node *LruNode[T]) TryLock() bool {
 	if !node.pin.CompareAndSwap(0, 1) {
 		return false
 	}
-	node.rw.Lock()
+	node.mu.Lock()
 	return true
-}
-
-// unlock read
-func (node *LruNode[T]) RUnlock() {
-	node.rw.RUnlock()
-	node.pin.Add(-1)
 }
 
 // unlock write
 func (node *LruNode[T]) Unlock() {
-	node.rw.Unlock()
+	node.mu.Unlock()
 	node.pin.Add(-1)
 }
 
