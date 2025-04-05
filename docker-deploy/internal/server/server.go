@@ -18,8 +18,9 @@ import (
 
 // AccountNode represents a simple account structure
 type AccountNode struct {
-	ID      string
-	Balance decimal.Decimal
+	ID        string
+	Balance   decimal.Decimal
+	Positions map[string]decimal.Decimal //Map of an account to it's hold of symbol
 }
 
 // Server represents the exchange server

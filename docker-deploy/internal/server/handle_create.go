@@ -7,6 +7,8 @@ import (
 	"StockOverflow/pkg/xmlresponse"
 	"encoding/xml"
 	"fmt"
+
+	"github.com/shopspring/decimal"
 )
 
 // handleCreate processes a create XML request and returns the response
@@ -54,8 +56,9 @@ func (s *Server) processAccount(account *xmlparser.Account, response *xmlrespons
 	// Store in server memory
 	s.accountsMutex.Lock()
 	s.accounts[account.ID] = &AccountNode{
-		ID:      account.ID,
-		Balance: account.Balance,
+		ID:        account.ID,
+		Balance:   account.Balance,
+		Positions: make(map[string]decimal.Decimal),
 	}
 	s.accountsMutex.Unlock()
 
@@ -89,7 +92,6 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 	for _, allocation := range symbol.Accounts {
 		// Validate account exists
 		s.accountsMutex.RLock()
-		// TODO change the account map to lru accounts
 		account, exists := s.accounts[allocation.ID]
 		s.accountsMutex.RUnlock()
 
@@ -106,10 +108,19 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 				continue
 			}
 
-			// Create account in memory
+			// Create account in memory with Positions map
 			account = &AccountNode{
-				ID:      dbAccount.ID,
-				Balance: dbAccount.Balance,
+				ID:        dbAccount.ID,
+				Balance:   dbAccount.Balance,
+				Positions: make(map[string]decimal.Decimal), // Add this line
+			}
+
+			// Load all existing positions for this account
+			positions, err := database.GetPositions(s.db, allocation.ID)
+			if err == nil {
+				for _, pos := range positions {
+					account.Positions[pos.Symbol] = pos.Amount
+				}
 			}
 
 			s.accountsMutex.Lock()
@@ -118,7 +129,7 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 		}
 
 		// Update position in database
-		err = database.CreateOrUpdatePosition(s.db, allocation.ID, symbol.Symbol, allocation.Balance)
+		err = database.CreateOrUpdatePosition(s.db, allocation.ID, symbol.Symbol, allocation.Amount)
 		if err != nil {
 			s.logger.Printf("Failed to update position: %v", err)
 			response.Errors = append(response.Errors, xmlresponse.Error{
@@ -129,12 +140,21 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 			continue
 		}
 
+		// Update position in memory
+		s.accountsMutex.Lock()
+		if s.accounts[allocation.ID].Positions == nil {
+			s.accounts[allocation.ID].Positions = make(map[string]decimal.Decimal)
+		}
+		// Store the amount of shares, not balance
+		s.accounts[allocation.ID].Positions[symbol.Symbol] = allocation.Amount // This is correct because allocation.Balance is the amount of shares
+		s.accountsMutex.Unlock()
+
 		// Add success response
 		response.Created = append(response.Created, xmlresponse.Created{
 			Symbol: symbol.Symbol,
 			ID:     allocation.ID,
 		})
 		s.logger.Printf("Successfully allocated %s shares of %s to account %s",
-			allocation.Balance.String(), symbol.Symbol, allocation.ID)
+			allocation.Amount.String(), symbol.Symbol, allocation.ID)
 	}
 }

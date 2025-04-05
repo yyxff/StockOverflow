@@ -50,6 +50,6 @@ type Symbol struct {
 }
 
 type AccountInSymbol struct {
-	ID      string          `xml:"id,attr"`
-	Balance decimal.Decimal `xml:",chardata"`
+	ID     string          `xml:"id,attr"`
+	Amount decimal.Decimal `xml:",chardata"`
 }

@@ -36,12 +36,25 @@ func (s *Server) handleTransactions(transactionData xmlparser.Transaction) ([]by
 			return marshalResponse(response)
 		}
 
-		// Create account in memory
+		// Create account in memory with positions
 		account = &AccountNode{
-			ID:      dbAccount.ID,
-			Balance: dbAccount.Balance,
+			ID:        dbAccount.ID,
+			Balance:   dbAccount.Balance,
+			Positions: make(map[string]decimal.Decimal),
 		}
 
+		// Load all existing positions for this account
+		positions, err := database.GetPositions(s.db, dbAccount.ID)
+		if err == nil {
+			for _, pos := range positions {
+				account.Positions[pos.Symbol] = pos.Amount
+			}
+		} else {
+			s.logger.Printf("Warning: Failed to load positions for account %s: %v", dbAccount.ID, err)
+			// Continue with empty positions map
+		}
+
+		// Store in server memory
 		s.accountsMutex.Lock()
 		s.accounts[account.ID] = account
 		s.accountsMutex.Unlock()
@@ -78,7 +91,7 @@ func (s *Server) validateAndReserve(account *AccountNode, symbol string, amount,
 		s.accountsMutex.RUnlock()
 
 		if accountBalance.LessThan(totalCost) {
-			return "Insufficient funds"
+			return "Insufficient funds for account: " + account.ID
 		}
 
 		// Reserve the funds by updating account balance
@@ -96,41 +109,34 @@ func (s *Server) validateAndReserve(account *AccountNode, symbol string, amount,
 
 		return ""
 	} else {
-		// For sell order, check if account has enough shares
+		// For sell order
 		sellAmount := amount.Abs()
 
-		// Get the position from database
-		positions, err := database.GetPositions(s.db, account.ID)
-		if err != nil {
-			return fmt.Sprintf("Failed to retrieve positions: %v", err)
-		}
+		// Get the position from memory instead of database
+		s.accountsMutex.RLock()
+		currentPosition, exists := s.accounts[account.ID].Positions[symbol]
+		s.accountsMutex.RUnlock()
 
-		// Find the position for this symbol
-		var currentPosition *database.Position
-		for i := range positions {
-			if positions[i].Symbol == symbol {
-				currentPosition = &positions[i]
-				break
-			}
-		}
-
-		if currentPosition == nil || currentPosition.Amount.LessThan(sellAmount) {
+		if !exists || currentPosition.LessThan(sellAmount) {
 			posAmount := decimal.Zero
-			if currentPosition != nil {
-				posAmount = currentPosition.Amount
+			if exists {
+				posAmount = currentPosition
 			}
-
-			return "Insufficient shares for: " + posAmount.String()
+			return "Insufficient shares for: " + posAmount.String() + " in account: " + account.ID
 		}
 
-		// Reserve the shares by updating position
-		newAmount := currentPosition.Amount.Sub(sellAmount)
-
-		err = database.CreateOrUpdatePosition(s.db, account.ID, symbol, newAmount)
+		// Calculate new position amount
+		newAmount := currentPosition.Sub(sellAmount)
+		// Update position in database
+		err := database.CreateOrUpdatePosition(s.db, account.ID, symbol, newAmount)
 		if err != nil {
 			return fmt.Sprintf("Failed to update position: %v", err)
 		}
 
+		// Update position in memory
+		s.accountsMutex.Lock()
+		s.accounts[account.ID].Positions[symbol] = newAmount
+		s.accountsMutex.Unlock()
 		return ""
 	}
 }
