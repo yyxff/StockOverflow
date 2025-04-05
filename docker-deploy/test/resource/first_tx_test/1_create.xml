@@ -3,7 +3,7 @@
 <create>
     <account id="trader1" balance="10000.00"/>
     <account id="trader2" balance="15000.00"/>
-    <account id="trader3" balance="5000.00"/>
+    <account id="trader3" balance="8000.00"/>
     <symbol sym="AAPL">
         <account id="trader1">200</account>
         <account id="trader2">100</account>

@@ -233,16 +233,26 @@ func CreateOrder(db *sql.DB, order *Order) error {
 // GetOrder retrieves an order from the database
 func GetOrder(db *sql.DB, orderID string) (*Order, error) {
 	var order Order
+	var canceledTime sql.NullInt64 // Use sql.NullInt64 to handle NULL values
+
 	err := db.QueryRow(
 		"SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time "+
 			"FROM orders WHERE id = $1", orderID).Scan(
 		&order.ID, &order.AccountID, &order.Symbol, &order.Amount, &order.Price,
-		&order.Status, &order.Remaining, &order.Timestamp, &order.CanceledTime)
+		&order.Status, &order.Remaining, &order.Timestamp, &canceledTime)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("order not found: %s", orderID)
 		}
 		return nil, fmt.Errorf("error retrieving order: %v", err)
+	}
+
+	// Convert NullInt64 to int64 (0 if NULL)
+	if canceledTime.Valid {
+		order.CanceledTime = canceledTime.Int64
+	} else {
+		order.CanceledTime = 0 // Use 0 or another default value for NULL
 	}
 
 	return &order, nil
