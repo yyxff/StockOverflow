@@ -1,0 +1,19 @@
+571
+<?xml version="1.0" encoding="UTF-8"?>
+<create>
+    <account id="trader1" balance="10000.00"/>
+    <account id="trader2" balance="15000.00"/>
+    <account id="trader3" balance="8000.00"/>
+    <symbol sym="AAPL">
+        <account id="trader1">200</account>
+        <account id="trader2">100</account>
+    </symbol>
+    <symbol sym="GOOG">
+        <account id="trader2">50</account>
+        <account id="trader3">30</account>
+    </symbol>
+    <symbol sym="TSLA">
+        <account id="trader1">75</account>
+        <account id="trader3">25</account>
+    </symbol>
+</create>

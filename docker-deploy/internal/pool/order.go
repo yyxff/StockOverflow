@@ -32,3 +32,8 @@ func (order *Order) GetPrice() decimal.Decimal {
 func (order *Order) GetTime() time.Time {
 	return order.time
 }
+
+// get ID
+func (order *Order) GetID() uint {
+	return order.id
+}

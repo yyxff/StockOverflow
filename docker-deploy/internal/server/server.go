@@ -1,44 +1,72 @@
 package server
 
 import (
+	"StockOverflow/internal/exchange"
+	"StockOverflow/internal/pool"
 	"StockOverflow/pkg/xmlparser"
 	"bufio"
-	"encoding/xml"
+	"database/sql"
 	"fmt"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/shopspring/decimal"
 )
 
+// AccountNode represents a simple account structure
+type AccountNode struct {
+	ID        string
+	Balance   decimal.Decimal
+	Positions map[string]decimal.Decimal //Map of an account to it's hold of symbol
+}
+
+// Server represents the exchange server
 // Server represents the exchange server
 type Server struct {
+	// Server configuration
 	listener    net.Listener
 	logger      *log.Logger
 	wg          sync.WaitGroup
 	connections map[net.Conn]struct{}
 	mutex       sync.Mutex
+
+	// Database connection
+	db *sql.DB
+
 	// Exchange state
-	accounts      map[string]*xmlparser.Account
-	symbols       map[string]*xmlparser.Symbol
-	orders        map[string]*xmlparser.Order
-	nextOrderID   int
+	stockPool   *pool.StockPool         // Stock trading nodes
+	accounts    map[string]*AccountNode // Simple account storage
+	nextOrderID int                     // For generating unique order IDs
+	exchange    *exchange.Exchange      // Exchange engine for matching orders
+
+	// Mutexes for concurrent access
 	accountsMutex sync.RWMutex
-	symbolsMutex  sync.RWMutex
 	ordersMutex   sync.RWMutex
+	idMutex       sync.Mutex
 }
 
 // NewServer creates a new exchange server
 func NewServer(logger *log.Logger) *Server {
-	return &Server{
+	stockPool := pool.NewPool(1000)
+
+	server := &Server{
 		logger:      logger,
 		connections: make(map[net.Conn]struct{}),
-		accounts:    make(map[string]*xmlparser.Account),
-		symbols:     make(map[string]*xmlparser.Symbol),
-		orders:      make(map[string]*xmlparser.Order),
+		stockPool:   stockPool,
+		accounts:    make(map[string]*AccountNode),
 		nextOrderID: 1,
 	}
+
+	return server
+}
+
+// SetDB sets the database connection and initializes the exchange
+func (s *Server) SetDB(db *sql.DB) {
+	s.db = db
+	s.exchange = exchange.NewExchange(db, s.stockPool, s.logger)
 }
 
 // Start begins listening for connections on the specified address
@@ -55,6 +83,10 @@ func (s *Server) Start(addr string) error {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
+			// Check if the listener was closed
+			if strings.Contains(err.Error(), "use of closed network connection") {
+				return nil
+			}
 			s.logger.Printf("Error accepting connection: %v", err)
 			continue
 		}
@@ -107,10 +139,38 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	// Process the XML and get a response
-	response, err := s.processXML(xmlData)
+	// Parse the XML using xmlparser
+	parser := &xmlparser.Xmlparser{}
+	parsedXML, xmlType, err := parser.Parse(xmlData)
 	if err != nil {
-		s.logger.Printf("Error processing XML: %v", err)
+		s.logger.Printf("Error parsing XML: %v", err)
+		return
+	}
+
+	// Process based on the type of XML structure
+	var response []byte
+	switch xmlType.Name() {
+	case "Create":
+		createData, ok := parsedXML.(xmlparser.Create)
+		if !ok {
+			s.logger.Printf("Error: Failed to cast to Create type")
+			return
+		}
+		response, err = s.handleCreate(createData)
+	case "Transaction":
+		transactionData, ok := parsedXML.(xmlparser.Transaction)
+		if !ok {
+			s.logger.Printf("Error: Failed to cast to Transaction type")
+			return
+		}
+		response, err = s.handleTransactions(transactionData)
+	default:
+		s.logger.Printf("Unknown XML type: %s", xmlType.Name())
+		return
+	}
+
+	if err != nil {
+		s.logger.Printf("Error processing request: %v", err)
 		return
 	}
 
@@ -123,46 +183,15 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 }
 
-// processXML handles the parsing and execution of XML commands
-func (s *Server) processXML(data []byte) ([]byte, error) {
-	// Determine the root element to decide how to process
-	var root struct {
-		XMLName xml.Name
-	}
+// generateOrderID creates a unique order ID
+func (s *Server) generateOrderID() string {
+	s.idMutex.Lock()
+	defer s.idMutex.Unlock()
 
-	if err := xml.Unmarshal(data, &root); err != nil {
-		return nil, fmt.Errorf("failed to parse XML: %v", err)
-	}
+	id := s.nextOrderID
+	s.nextOrderID++
 
-	// Process based on the root element
-	switch root.XMLName.Local {
-	case "create":
-		return s.handleCreate(data)
-	case "transactions":
-		return s.handleTransactions(data)
-	default:
-		return nil, fmt.Errorf("unknown XML root element: %s", root.XMLName.Local)
-	}
-}
-
-// handleCreate processes a create request (placeholder implementation)
-func (s *Server) handleCreate(data []byte) ([]byte, error) {
-	// Placeholder implementation - will be filled with actual logic
-	result := `<?xml version="1.0" encoding="UTF-8"?>
-<results>
-  <created id="test"/>
-</results>`
-	return []byte(result), nil
-}
-
-// handleTransactions processes a transactions request (placeholder implementation)
-func (s *Server) handleTransactions(data []byte) ([]byte, error) {
-	// Placeholder implementation - will be filled with actual logic
-	result := `<?xml version="1.0" encoding="UTF-8"?>
-<results>
-  <opened sym="SPY" amount="100" limit="145.67" id="1"/>
-</results>`
-	return []byte(result), nil
+	return strconv.Itoa(id)
 }
 
 // Stop gracefully shuts down the server

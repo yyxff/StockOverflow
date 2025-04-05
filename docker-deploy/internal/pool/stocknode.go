@@ -9,10 +9,13 @@ type StockNode struct {
 }
 
 // new
-func NewStockNode(symbol string) *LruNode[*StockNode] {
+func NewStockNode(symbol string, limit uint) *LruNode[*StockNode] {
 	return &LruNode[*StockNode]{
 		symbol: symbol,
-		value:  &StockNode{},
+		value: &StockNode{
+			sellers: *NewSellerHeap(limit),
+			buyers:  *NewBuyerHeap(limit),
+		},
 	}
 }
 

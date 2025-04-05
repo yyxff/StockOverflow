@@ -1,27 +1,28 @@
 package xmlparser
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+
+	"github.com/shopspring/decimal"
+)
 
 type Create struct {
-	XMLName  xml.Name  `xml:"create"`
-	Accounts []Account `xml:"account"`
-	Symbols  []Symbol  `xml:"symbol"`
+	XMLName  xml.Name `xml:"create"`
+	Children []any    `xml:"any"`
 }
 
 // Transaction represents the root element for transactions operations
 type Transaction struct {
-	XMLName xml.Name `xml:"transactions"`
-	ID      string   `xml:"id,attr"`
-	Orders  []Order  `xml:"order"`
-	Queries []Query  `xml:"query"`
-	Cancels []Cancel `xml:"cancel"`
+	XMLName  xml.Name `xml:"transactions"`
+	ID       string   `xml:"id,attr"`
+	Children []any    `xm':"any"`
 }
 
 // Order represents an order request
 type Order struct {
-	Symbol     string  `xml:"sym,attr"`
-	Amount     int     `xml:"amount,attr"`
-	LimitPrice float64 `xml:"limit,attr"`
+	Symbol     string          `xml:"sym,attr"`
+	Amount     int             `xml:"amount,attr"`
+	LimitPrice decimal.Decimal `xml:"limit,attr"`
 }
 
 // Query represents an order query
@@ -34,8 +35,8 @@ type Cancel struct {
 	ID string `xml:"id,attr"`
 }
 type Account struct {
-	ID      string `xml:"id,attr"`
-	Balance int    `xml:"balance,attr"`
+	ID      string          `xml:"id,attr"`
+	Balance decimal.Decimal `xml:"balance,attr"`
 }
 
 type Position struct {
@@ -44,9 +45,11 @@ type Position struct {
 }
 
 type Symbol struct {
-	Symbol   string `xml:"sym,attr"`
-	Accounts []struct {
-		ID      string `xml:"id,attr"`
-		Balance string `xml:",chardata"`
-	} `xml:"account"`
+	Symbol   string            `xml:"sym,attr"`
+	Accounts []AccountInSymbol `xml:"account"`
+}
+
+type AccountInSymbol struct {
+	ID     string          `xml:"id,attr"`
+	Amount decimal.Decimal `xml:",chardata"`
 }

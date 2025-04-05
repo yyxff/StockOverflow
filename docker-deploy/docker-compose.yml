@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Go
+  app:
+    build: 
+      context: . 
+      dockerfile: Dockerfile
+    ports:
+      - "12345:12345"  
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=stockoverflow
+    depends_on:
+      db:  
+        condition: service_healthy 
+    networks:
+      - mynetwork
+
+  # PostgreSQL
+  db:
+    image: postgres:15-alpine 
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=stockoverflow
+    # volumes:
+    #   - postgres_data:/var/lib/postgresql/data 
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql 
+    ports:
+      - "7777:5432"  # expose port
+    networks:
+      - mynetwork
+    healthcheck:  # health check
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stockoverflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  mynetwork:  # network in containers
