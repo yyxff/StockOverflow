@@ -4,11 +4,13 @@ type SellerHeap struct {
 	*LimitedHeap[Order]
 }
 
-func NewSellerHeap(limit uint) *SellerHeap {
+func NewSellerHeap(maxSize uint, minSize uint) *SellerHeap {
 	return &SellerHeap{
 		&LimitedHeap[Order]{
 			NewHeap(lessMin),
-			limit,
+			maxSize,
+			minSize,
+			nil,
 		},
 	}
 }

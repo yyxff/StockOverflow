@@ -4,11 +4,13 @@ type BuyerHeap struct {
 	*LimitedHeap[Order]
 }
 
-func NewBuyerHeap(limit uint) *BuyerHeap {
+func NewBuyerHeap(maxSize uint, minSize uint) *BuyerHeap {
 	return &BuyerHeap{
 		&LimitedHeap[Order]{
 			NewHeap(lessMax),
-			limit,
+			maxSize,
+			minSize,
+			nil,
 		},
 	}
 }

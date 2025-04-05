@@ -2,13 +2,18 @@ package pool
 
 import (
 	"container/heap"
+	"database/sql"
 	"errors"
 )
 
 type LimitedHeap[T any] struct {
 	*Heap[T]
+	// size
 	maxSize uint
-	// minSize uint
+	minSize uint
+
+	// db
+	db *sql.DB
 }
 
 // safe Pop
@@ -24,6 +29,11 @@ func (h *LimitedHeap[T]) SafePush(ele *Order) error {
 	heap.Push(h, *ele)
 	h.updateHeap()
 	return nil
+}
+
+// set db
+func (h *LimitedHeap[T]) SetDB(db *sql.DB) {
+	h.db = db
 }
 
 // update heap to keep it small
@@ -45,5 +55,18 @@ func (h *LimitedHeap[T]) updateHeap() {
 		}
 		h.data = data
 		heap.Init(h)
+	} else if uint(h.Len()) < h.minSize {
+		h.pullFromDB()
 	}
+}
+
+// pull enough data from db
+func (h *LimitedHeap[T]) pullFromDB() error {
+	if h.db == nil {
+		return errors.New("no db connected now!")
+	}
+
+	// do sql
+
+	return nil
 }
