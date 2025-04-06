@@ -4,12 +4,8 @@ import "encoding/xml"
 
 // Results is the root element for responses
 type Results struct {
-	XMLName  xml.Name   `xml:"results"`
-	Created  []Created  `xml:"created,omitempty"`
-	Errors   []Error    `xml:"error,omitempty"`
-	Opened   []Opened   `xml:"opened,omitempty"`
-	Statuses []Status   `xml:"status,omitempty"`
-	Canceled []Canceled `xml:"canceled,omitempty"`
+	XMLName  xml.Name `xml:"results"`
+	Children []any    `xml:"-"` // ordered response children
 }
 
 // Created represents a successful creation response

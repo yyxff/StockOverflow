@@ -5,7 +5,6 @@ import (
 	"StockOverflow/internal/pool"
 	"StockOverflow/pkg/xmlparser"
 	"StockOverflow/pkg/xmlresponse"
-	"encoding/xml"
 	"fmt"
 
 	"github.com/shopspring/decimal"
@@ -14,7 +13,9 @@ import (
 // handleCreate processes a create XML request and returns the response
 func (s *Server) handleCreate(createData xmlparser.Create) ([]byte, error) {
 	// Initialize response
-	response := xmlresponse.Results{}
+	response := xmlresponse.Results{
+		Children: make([]any, 0),
+	}
 
 	// process children in order
 	for _, child := range createData.Children {
@@ -26,14 +27,7 @@ func (s *Server) handleCreate(createData xmlparser.Create) ([]byte, error) {
 		}
 	}
 
-	// Marshal response to XML
-	xmlHeader := []byte(xml.Header)
-	xmlBody, err := xml.MarshalIndent(response, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal response: %v", err)
-	}
-
-	return append(xmlHeader, xmlBody...), nil
+	return marshalResponse(response)
 }
 
 // process account ele
@@ -46,7 +40,7 @@ func (s *Server) processAccount(account *xmlparser.Account, response *xmlrespons
 	err := database.CreateAccount(s.db, account.ID, account.Balance)
 	if err != nil {
 		s.logger.Printf("Failed to create account %s: %v", account.ID, err)
-		response.Errors = append(response.Errors, xmlresponse.Error{
+		response.Children = append(response.Children, xmlresponse.Error{
 			ID:      account.ID,
 			Message: err.Error(),
 		})
@@ -63,7 +57,7 @@ func (s *Server) processAccount(account *xmlparser.Account, response *xmlrespons
 	s.accountsMutex.Unlock()
 
 	// Add success response
-	response.Created = append(response.Created, xmlresponse.Created{
+	response.Children = append(response.Children, xmlresponse.Created{
 		ID: account.ID,
 	})
 	s.logger.Printf("Successfully created account: %s", account.ID)
@@ -100,7 +94,7 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 			dbAccount, err := database.GetAccount(s.db, allocation.ID)
 			if err != nil {
 				s.logger.Printf("Account not found for allocation: %s", allocation.ID)
-				response.Errors = append(response.Errors, xmlresponse.Error{
+				response.Children = append(response.Children, xmlresponse.Error{
 					Symbol:  symbol.Symbol,
 					ID:      allocation.ID,
 					Message: "Account not found",
@@ -144,7 +138,7 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 		err = database.CreateOrUpdatePosition(s.db, allocation.ID, symbol.Symbol, newAmount)
 		if err != nil {
 			s.logger.Printf("Failed to update position: %v", err)
-			response.Errors = append(response.Errors, xmlresponse.Error{
+			response.Children = append(response.Children, xmlresponse.Error{
 				Symbol:  symbol.Symbol,
 				ID:      allocation.ID,
 				Message: fmt.Sprintf("Database error: %v", err),
@@ -164,7 +158,7 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 		s.accountsMutex.Unlock()
 
 		// Add success response
-		response.Created = append(response.Created, xmlresponse.Created{
+		response.Children = append(response.Children, xmlresponse.Created{
 			Symbol: symbol.Symbol,
 			ID:     allocation.ID,
 		})

@@ -1,7 +1,7 @@
 174
 <?xml version="1.0" encoding="UTF-8"?>
 <transactions id="trader2">
-    <query id="5"/>
-    <order sym="TSLA" amount="10" limit="230.00"/>
     <cancel id="4"/>
+    <order sym="TSLA" amount="10" limit="230.00"/>
+    <query id="5"/>
 </transactions>
