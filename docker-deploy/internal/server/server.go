@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -102,6 +103,7 @@ func (s *Server) Start(addr string) error {
 			defer s.wg.Done()
 			defer func() {
 				s.mutex.Lock()
+				s.logger.Printf("Closing connection from %s", c.RemoteAddr())
 				delete(s.connections, c)
 				s.mutex.Unlock()
 				c.Close()
@@ -116,70 +118,81 @@ func (s *Server) Start(addr string) error {
 func (s *Server) handleConnection(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 
-	// Read the message length
-	lengthStr, err := reader.ReadString('\n')
-	if err != nil {
-		s.logger.Printf("Error reading message length: %v", err)
-		return
-	}
-
-	// Parse the length
-	lengthStr = strings.TrimSpace(lengthStr)
-	length, err := strconv.Atoi(lengthStr)
-	if err != nil {
-		s.logger.Printf("Invalid message length: %v", err)
-		return
-	}
-
-	// Read the XML data
-	xmlData := make([]byte, length)
-	_, err = reader.Read(xmlData)
-	if err != nil {
-		s.logger.Printf("Error reading XML data: %v", err)
-		return
-	}
-
-	// Parse the XML using xmlparser
-	parser := &xmlparser.Xmlparser{}
-	parsedXML, xmlType, err := parser.Parse(xmlData)
-	if err != nil {
-		s.logger.Printf("Error parsing XML: %v", err)
-		return
-	}
-
-	// Process based on the type of XML structure
-	var response []byte
-	switch xmlType.Name() {
-	case "Create":
-		createData, ok := parsedXML.(xmlparser.Create)
-		if !ok {
-			s.logger.Printf("Error: Failed to cast to Create type")
+	// Keep handling messages until connection is closed
+	for {
+		// Read the message length
+		lengthStr, err := reader.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				s.logger.Printf("Error reading message length: %v", err)
+			}
+			// EOF or other error, connection is closed or broken
 			return
 		}
-		response, err = s.handleCreate(createData)
-	case "Transaction":
-		transactionData, ok := parsedXML.(xmlparser.Transaction)
-		if !ok {
-			s.logger.Printf("Error: Failed to cast to Transaction type")
+
+		// Parse the length
+		lengthStr = strings.TrimSpace(lengthStr)
+		if lengthStr == "" {
+			// Skip empty lines
+			continue
+		}
+
+		length, err := strconv.Atoi(lengthStr)
+		if err != nil {
+			s.logger.Printf("Invalid message length: %v", err)
 			return
 		}
-		response, err = s.handleTransactions(transactionData)
-	default:
-		s.logger.Printf("Unknown XML type: %s", xmlType.Name())
-		return
-	}
 
-	if err != nil {
-		s.logger.Printf("Error processing request: %v", err)
-		return
-	}
+		// Read the XML data
+		xmlData := make([]byte, length)
+		_, err = io.ReadFull(reader, xmlData)
+		if err != nil {
+			s.logger.Printf("Error reading XML data: %v", err)
+			return
+		}
 
-	// Send the response
-	respStr := string(response)
-	_, err = conn.Write([]byte(fmt.Sprintf("%d\n%s", len(respStr), respStr)))
-	if err != nil {
-		s.logger.Printf("Error sending response: %v", err)
-		return
+		// Parse the XML using xmlparser
+		parser := &xmlparser.Xmlparser{}
+		parsedXML, xmlType, err := parser.Parse(xmlData)
+		if err != nil {
+			s.logger.Printf("Error parsing XML: %v", err)
+			continue // Try to read the next message instead of closing the connection
+		}
+
+		// Process based on the type of XML structure
+		var response []byte
+		switch xmlType.Name() {
+		case "Create":
+			createData, ok := parsedXML.(xmlparser.Create)
+			if !ok {
+				s.logger.Printf("Error: Failed to cast to Create type")
+				continue // Try to read the next message
+			}
+			response, err = s.handleCreate(createData)
+		case "Transaction":
+			transactionData, ok := parsedXML.(xmlparser.Transaction)
+			if !ok {
+				s.logger.Printf("Error: Failed to cast to Transaction type")
+				continue // Try to read the next message
+			}
+			response, err = s.handleTransactions(transactionData)
+		default:
+			s.logger.Printf("Unknown XML type: %s", xmlType.Name())
+			continue // Try to read the next message
+		}
+
+		if err != nil {
+			s.logger.Printf("Error processing request: %v", err)
+			continue // Try to read the next message
+		}
+
+		// Send the response
+		respStr := string(response)
+		_, err = conn.Write([]byte(fmt.Sprintf("%d\n%s", len(respStr), respStr)))
+		if err != nil {
+			s.logger.Printf("Error sending response: %v", err)
+			return
+		}
 	}
 }
 
