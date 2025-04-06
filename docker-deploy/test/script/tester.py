@@ -75,6 +75,16 @@ def send_xml(xml_root, host, port):
             s.connect((host, port))
             s.sendall(full_data)
             print(f"Sent {len(full_data)} bytes to {host}:{port}")
+
+            # Read the response from the server
+            response = s.recv(4096)  # Adjust buffer size as needed
+            response_str = response.decode('utf-8')
+            print("Response from server:")
+            print(response_str)
+            
+            # Write the response to a local file
+            with open("server_response.xml", "w", encoding="utf-8") as f:
+                f.write(response_str)
     except Exception as e:
         print(f"Connection failed: {str(e)}")
 

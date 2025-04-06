@@ -61,8 +61,10 @@ func (e *Exchange) MatchOrder(orderID string, accountID string, symbol string, i
 		stockNode = pool.NewStockNode(symbol, 10)
 
 		buyers := stockNode.GetValue().GetBuyers()
+		buyers.SetDB(e.db)
 		buyers.CheckMin()
 		sellers := stockNode.GetValue().GetSellers()
+		sellers.SetDB(e.db)
 		sellers.CheckMin()
 
 		err = e.stockPool.Put(stockNode)
