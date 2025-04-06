@@ -276,7 +276,7 @@ func (s *Server) processOrder(orderRequest *xmlparser.Order, account *AccountNod
 			Symbol:  orderRequest.Symbol,
 			Amount:  float64(orderRequest.Amount),
 			Limit:   float64(orderRequest.LimitPrice.InexactFloat64()),
-			Message: "Exchange error: failed to place order)",
+			Message: "Failed to place order",
 		})
 		return
 	}
