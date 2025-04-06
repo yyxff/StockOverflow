@@ -40,7 +40,7 @@ func TestPlaceOrder(t *testing.T) {
 	symbol := "AAPL"
 	amount := decimal.NewFromInt(10)
 	price := decimal.NewFromFloat(150.50)
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 	fmt.Println("Current time:", now)
 
 	// Mock ExpectExec for order creation

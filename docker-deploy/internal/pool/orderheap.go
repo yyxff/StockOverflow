@@ -33,7 +33,7 @@ func refillFn(db *sql.DB, symbol string, heapType string, size int) []Order {
 	// do sql
 	orders, err := database.GetOpenOrdersBySymbolForHeap(db, symbol, heapType, size)
 	if err != nil {
-		return nil
+		return []Order{}
 	}
 
 	// new heap data

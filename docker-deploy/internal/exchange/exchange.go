@@ -30,7 +30,7 @@ func NewExchange(db *sql.DB, stockPool *pool.StockPool, logger *log.Logger) *Exc
 // PlaceOrder places a new order in the exchange
 func (e *Exchange) PlaceOrder(orderID, accountID, symbol string, amount, price decimal.Decimal) error {
 	// Create order in database
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 	order := &database.Order{
 		ID:        orderID,
 		AccountID: accountID,
@@ -59,6 +59,12 @@ func (e *Exchange) MatchOrder(orderID string, accountID string, symbol string, i
 	if err != nil {
 		// Symbol doesn't exist in pool, create a new node
 		stockNode = pool.NewStockNode(symbol, 10)
+
+		buyers := stockNode.GetValue().GetBuyers()
+		buyers.CheckMin()
+		sellers := stockNode.GetValue().GetSellers()
+		sellers.CheckMin()
+
 		err = e.stockPool.Put(stockNode)
 		if err != nil {
 			e.logger.Printf("Warning: Failed to add stock node to pool: %v", err)
@@ -152,7 +158,7 @@ func (e *Exchange) matchBuyOrder(stockNode *pool.LruNode[*pool.StockNode], order
 		// Determine the execution price (price of the earlier order)
 		var executionPrice decimal.Decimal
 
-		if sellOrder.Timestamp < time.Now().Unix() {
+		if sellOrder.Timestamp < time.Now().UnixNano() {
 			executionPrice = sellOrder.Price
 		} else {
 			executionPrice = price
@@ -175,7 +181,7 @@ func (e *Exchange) matchBuyOrder(stockNode *pool.LruNode[*pool.StockNode], order
 		// Execute the match
 		err = e.executeMatch(
 			orderID, accountID, sellOrderID, sellOrder.AccountID,
-			symbol, executionAmount, executionPrice, refundPrice, time.Now().Unix(),
+			symbol, executionAmount, executionPrice, refundPrice, time.Now().UnixNano(),
 		)
 
 		if err != nil {
@@ -286,7 +292,7 @@ func (e *Exchange) matchSellOrder(stockNode *pool.LruNode[*pool.StockNode], orde
 		// Determine the execution price (price of the earlier order)
 		var executionPrice decimal.Decimal
 
-		if buyOrder.Timestamp < time.Now().Unix() {
+		if buyOrder.Timestamp < time.Now().UnixNano() {
 			executionPrice = buyOrder.Price
 		} else {
 			executionPrice = price
@@ -309,7 +315,7 @@ func (e *Exchange) matchSellOrder(stockNode *pool.LruNode[*pool.StockNode], orde
 		// Execute the match
 		err = e.executeMatch(
 			buyOrderID, buyOrder.AccountID, orderID, accountID,
-			symbol, executionAmount, executionPrice, refundPrice, time.Now().Unix(),
+			symbol, executionAmount, executionPrice, refundPrice, time.Now().UnixNano(),
 		)
 
 		if err != nil {
@@ -481,7 +487,7 @@ func (e *Exchange) CancelOrder(orderID string) error {
 	}
 
 	// Get the current timestamp
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 
 	// Return funds or shares based on order type
 	isBuy := order.Amount.IsPositive()

@@ -79,6 +79,12 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 	if err != nil {
 		// Symbol doesn't exist in pool, create a new node
 		stockNode = pool.NewStockNode(symbol.Symbol, 10)
+
+		buyers := stockNode.GetValue().GetBuyers()
+		buyers.CheckMin()
+		sellers := stockNode.GetValue().GetSellers()
+		sellers.CheckMin()
+
 		err = s.stockPool.Put(stockNode)
 		if err != nil {
 			s.logger.Printf("Warning: Failed to add stock node to pool: %v", err)

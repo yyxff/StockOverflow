@@ -129,7 +129,7 @@ func TestMatchOrderBuy(t *testing.T) {
 	}).AddRow(
 		orderID, accountID, symbol, amount,
 		price, "open", amount,
-		time.Now().Unix(), nil,
+		time.Now().UnixNano(), nil,
 	)
 
 	mock.ExpectQuery("SELECT (.+) FROM orders WHERE id = \\$1").
@@ -245,7 +245,7 @@ func TestMatchOrderSell(t *testing.T) {
 	}).AddRow(
 		orderID, accountID, symbol, amount,
 		price, "open", amount.Abs(),
-		time.Now().Unix(), nil,
+		time.Now().UnixNano(), nil,
 	)
 
 	mock.ExpectQuery("SELECT (.+) FROM orders WHERE id = \\$1").

@@ -30,7 +30,7 @@ func (h *LimitedHeap[T]) SafePop() (interface{}, error) {
 	if h.Len() == 0 {
 		return nil, errors.New("pop from empty heap")
 	}
-	h.checkMin()
+	h.CheckMin()
 	result := heap.Pop(h)
 	return result, nil
 }
@@ -70,7 +70,7 @@ func (h *LimitedHeap[T]) checkMax() {
 }
 
 // update heap to keep it big
-func (h *LimitedHeap[T]) checkMin() {
+func (h *LimitedHeap[T]) CheckMin() {
 	if uint(h.Len()) < h.minSize {
 		h.pullFromDB()
 		heap.Init(h)

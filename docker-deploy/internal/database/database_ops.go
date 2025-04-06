@@ -310,17 +310,20 @@ func GetOpenOrdersBySymbol(db *sql.DB, symbol string) ([]Order, error) {
 func GetOpenOrdersBySymbolForHeap(db *sql.DB, symbol string, target string, limit int) ([]Order, error) {
 
 	condition := ""
+	orderStr := ""
 	if target == "buyer" {
 		condition = " AND amount > 0"
+		orderStr = " ORDER BY price DESC, timestamp ASC"
 	} else if target == "seller" {
 		condition = " AND amount < 0"
+		orderStr = " ORDER BY price ASC, timestamp ASC"
 	} else {
 		return nil, fmt.Errorf("target should be buyer or seller, but get%s", target)
 	}
 
 	limitStr := strconv.Itoa(limit)
 	sqlStr := "SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time " +
-		"FROM orders WHERE symbol = $1 AND status = 'open'" + condition + " LIMIT " + limitStr
+		"FROM orders WHERE symbol = $1 AND status = 'open'" + condition + orderStr + " LIMIT " + limitStr
 	rows, err := db.Query(sqlStr, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving open orders: %v", err)
