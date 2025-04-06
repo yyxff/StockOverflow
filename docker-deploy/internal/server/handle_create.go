@@ -2,7 +2,6 @@ package server
 
 import (
 	"StockOverflow/internal/database"
-	"StockOverflow/internal/pool"
 	"StockOverflow/pkg/xmlparser"
 	"StockOverflow/pkg/xmlresponse"
 	"fmt"
@@ -68,19 +67,19 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 	s.logger.Printf("Processing create symbol request for: %s", symbol.Symbol)
 
 	// Get or create stock node for trading
-	var stockNode *pool.LruNode[*pool.StockNode]
-	node, err := s.stockPool.Get(symbol.Symbol)
-	if err != nil {
-		// Symbol doesn't exist in pool, create a new node
-		stockNode = pool.NewStockNode(symbol.Symbol, 10)
-		err = s.stockPool.Put(stockNode)
-		if err != nil {
-			s.logger.Printf("Warning: Failed to add stock node to pool: %v", err)
-			// Non-fatal, continue processing
-		}
-	} else {
-		stockNode = node
-	}
+	// var stockNode *pool.LruNode[*pool.StockNode]
+	// node, err := s.stockPool.Get(symbol.Symbol)
+	// if err != nil {
+	// 	// Symbol doesn't exist in pool, create a new node
+	// 	stockNode = pool.NewStockNode(symbol.Symbol, 10)
+	// 	err = s.stockPool.Put(stockNode)
+	// 	if err != nil {
+	// 		s.logger.Printf("Warning: Failed to add stock node to pool: %v", err)
+	// 		// Non-fatal, continue processing
+	// 	}
+	// } else {
+	// 	stockNode = node
+	// }
 
 	// Process allocations for this symbol
 	for _, allocation := range symbol.Accounts {
