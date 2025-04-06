@@ -9,10 +9,10 @@ import (
 )
 
 func TestBuyerPush(t *testing.T) {
-	buyers := NewBuyerHeap(10)
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(0.5), time.Now()))
+	buyers := NewBuyerHeap("SPY", 10, 3)
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(1.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(0.5), time.Now()))
 
 	x, _ := buyers.SafePop()
 	d := x.(Order)
@@ -23,7 +23,7 @@ func TestBuyerPush(t *testing.T) {
 }
 
 func TestBuyerPop(t *testing.T) {
-	buyers := NewBuyerHeap(10)
+	buyers := NewBuyerHeap("SPY", 10, 3)
 	// heap.Push(1.0)
 	// heap.Push(2.0)
 	// heap.Push(0.5)
@@ -35,13 +35,13 @@ func TestBuyerPop(t *testing.T) {
 }
 
 func TestBuyerTime(t *testing.T) {
-	buyers := NewBuyerHeap(10)
+	buyers := NewBuyerHeap("SPY", 10, 3)
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t1))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t2))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(3.0), t1))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(3.0), t2))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x, _ := buyers.SafePop()
 	d := x.(Order)
@@ -55,13 +55,13 @@ func TestBuyerTime(t *testing.T) {
 }
 
 func TestBuyerTime2(t *testing.T) {
-	buyers := NewBuyerHeap(10)
+	buyers := NewBuyerHeap("SPY", 10, 3)
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t2))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), t1))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(3.0), t2))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(3.0), t1))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x, _ := buyers.SafePop()
 	d := x.(Order)
@@ -75,24 +75,27 @@ func TestBuyerTime2(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	buyers := NewBuyerHeap(10)
+	buyers := NewBuyerHeap("SPY", 10, 3)
 
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(3.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	var data []Order
+	data = append(data, *NewOrder("1", 1, decimal.NewFromFloat(3.0), time.Now()))
+
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(3.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(3.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	if buyers.Len() != 9 {
 		t.Errorf("should get 9 but %d", buyers.Len())
 	}
 
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
-	buyers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
+	buyers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	if buyers.Len() != 5 {
 		t.Errorf("should get 5 but %d", buyers.Len())

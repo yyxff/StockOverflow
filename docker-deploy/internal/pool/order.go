@@ -6,15 +6,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type Orderer interface {
+	GetID() int
+}
 type Order struct {
-	id     uint
+	id     string
 	amount uint
 	price  decimal.Decimal
 	time   time.Time
 }
 
 // new
-func NewOrder(id uint, amount uint, price decimal.Decimal, time time.Time) *Order {
+func NewOrder(id string, amount uint, price decimal.Decimal, time time.Time) *Order {
 	return &Order{
 		id:     id,
 		amount: amount,
@@ -34,6 +37,6 @@ func (order *Order) GetTime() time.Time {
 }
 
 // get ID
-func (order *Order) GetID() uint {
+func (order *Order) GetID() string {
 	return order.id
 }

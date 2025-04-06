@@ -10,10 +10,10 @@ import (
 )
 
 func TestPush(t *testing.T) {
-	sellers := NewSellerHeap(10)
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), time.Now()))
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(0.5), time.Now()))
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	sellers := NewSellerHeap("SPY", 10, 3)
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(1.0), time.Now()))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(0.5), time.Now()))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
 	d := x.(Order)
@@ -24,7 +24,7 @@ func TestPush(t *testing.T) {
 }
 
 func TestPop(t *testing.T) {
-	sellers := NewSellerHeap(10)
+	sellers := NewSellerHeap("SPY", 10, 3)
 	// heap.Push(1.0)
 	// heap.Push(2.0)
 	// heap.Push(0.5)
@@ -36,13 +36,13 @@ func TestPop(t *testing.T) {
 }
 
 func TestSellerTime(t *testing.T) {
-	sellers := NewSellerHeap(10)
+	sellers := NewSellerHeap("SPY", 10, 3)
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t1))
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t2))
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
 	d := x.(Order)
@@ -56,13 +56,13 @@ func TestSellerTime(t *testing.T) {
 }
 
 func TestSellerTime2(t *testing.T) {
-	sellers := NewSellerHeap(10)
+	sellers := NewSellerHeap("SPY", 10, 3)
 
 	t1 := time.Now()
 	t2 := t1.Add(2 * time.Second)
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t2))
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(1.0), t1))
-	sellers.SafePush(NewOrder(1, 1, decimal.NewFromFloat(2.0), time.Now()))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(1.0), t2))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(1.0), t1))
+	sellers.SafePush(NewOrder("1", 1, decimal.NewFromFloat(2.0), time.Now()))
 
 	x := heap.Pop(sellers)
 	d := x.(Order)

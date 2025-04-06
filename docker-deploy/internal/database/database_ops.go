@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"github.com/shopspring/decimal"
 )
@@ -284,6 +285,43 @@ func GetOpenOrdersBySymbol(db *sql.DB, symbol string) ([]Order, error) {
 	rows, err := db.Query(
 		"SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time "+
 			"FROM orders WHERE symbol = $1 AND status = 'open'", symbol)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving open orders: %v", err)
+	}
+	defer rows.Close()
+
+	var orders []Order
+	for rows.Next() {
+		var order Order
+		if err := rows.Scan(&order.ID, &order.AccountID, &order.Symbol, &order.Amount,
+			&order.Price, &order.Status, &order.Remaining, &order.Timestamp, &order.CanceledTime); err != nil {
+			return nil, fmt.Errorf("error scanning order: %v", err)
+		}
+		orders = append(orders, order)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating orders: %v", err)
+	}
+
+	return orders, nil
+}
+
+func GetOpenOrdersBySymbolForHeap(db *sql.DB, symbol string, target string, limit int) ([]Order, error) {
+
+	condition := ""
+	if target == "buyer" {
+		condition = " AND amount > 0"
+	} else if target == "seller" {
+		condition = " AND amount < 0"
+	} else {
+		return nil, fmt.Errorf("target should be buyer or seller, but get%s", target)
+	}
+
+	limitStr := strconv.Itoa(limit)
+	sql := "SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time " +
+		"FROM orders WHERE symbol = $1 AND status = 'open'" + condition + " LIMIT " + limitStr
+	rows, err := db.Query(sql, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving open orders: %v", err)
 	}

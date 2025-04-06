@@ -34,15 +34,15 @@ func setupAppleStock(stockPool *pool.StockPool) {
 
 	// Add buy orders (higher prices first for priority)
 	buyers := appleNode.GetValue().GetBuyers()
-	buyers.SafePush(pool.NewOrder(101, 5, decimal.NewFromFloat(150.25), time.Now().Add(-10*time.Minute)))
-	buyers.SafePush(pool.NewOrder(102, 10, decimal.NewFromFloat(149.50), time.Now().Add(-15*time.Minute)))
-	buyers.SafePush(pool.NewOrder(103, 3, decimal.NewFromFloat(148.75), time.Now().Add(-20*time.Minute)))
+	buyers.SafePush(pool.NewOrder("101", 5, decimal.NewFromFloat(150.25), time.Now().Add(-10*time.Minute)))
+	buyers.SafePush(pool.NewOrder("102", 10, decimal.NewFromFloat(149.50), time.Now().Add(-15*time.Minute)))
+	buyers.SafePush(pool.NewOrder("103", 3, decimal.NewFromFloat(148.75), time.Now().Add(-20*time.Minute)))
 
 	// Add sell orders (lower prices first for priority)
 	sellers := appleNode.GetValue().GetSellers()
-	sellers.SafePush(pool.NewOrder(201, 4, decimal.NewFromFloat(151.50), time.Now().Add(-5*time.Minute)))
-	sellers.SafePush(pool.NewOrder(202, 7, decimal.NewFromFloat(152.25), time.Now().Add(-7*time.Minute)))
-	sellers.SafePush(pool.NewOrder(203, 2, decimal.NewFromFloat(153.00), time.Now().Add(-9*time.Minute)))
+	sellers.SafePush(pool.NewOrder("201", 4, decimal.NewFromFloat(151.50), time.Now().Add(-5*time.Minute)))
+	sellers.SafePush(pool.NewOrder("202", 7, decimal.NewFromFloat(152.25), time.Now().Add(-7*time.Minute)))
+	sellers.SafePush(pool.NewOrder("203", 2, decimal.NewFromFloat(153.00), time.Now().Add(-9*time.Minute)))
 }
 
 // setupTeslaStock sets up TSLA stock with some existing orders
@@ -53,13 +53,13 @@ func setupTeslaStock(stockPool *pool.StockPool) {
 
 	// Add buy orders
 	buyers := teslaNode.GetValue().GetBuyers()
-	buyers.SafePush(pool.NewOrder(301, 2, decimal.NewFromFloat(220.50), time.Now().Add(-30*time.Minute)))
-	buyers.SafePush(pool.NewOrder(302, 5, decimal.NewFromFloat(219.75), time.Now().Add(-35*time.Minute)))
+	buyers.SafePush(pool.NewOrder("301", 2, decimal.NewFromFloat(220.50), time.Now().Add(-30*time.Minute)))
+	buyers.SafePush(pool.NewOrder("302", 5, decimal.NewFromFloat(219.75), time.Now().Add(-35*time.Minute)))
 
 	// Add sell orders
 	sellers := teslaNode.GetValue().GetSellers()
-	sellers.SafePush(pool.NewOrder(401, 3, decimal.NewFromFloat(222.25), time.Now().Add(-25*time.Minute)))
-	sellers.SafePush(pool.NewOrder(402, 4, decimal.NewFromFloat(223.50), time.Now().Add(-28*time.Minute)))
+	sellers.SafePush(pool.NewOrder("401", 3, decimal.NewFromFloat(222.25), time.Now().Add(-25*time.Minute)))
+	sellers.SafePush(pool.NewOrder("402", 4, decimal.NewFromFloat(223.50), time.Now().Add(-28*time.Minute)))
 }
 
 // setupGoogleStock sets up GOOGL stock with some existing orders
@@ -70,11 +70,11 @@ func setupGoogleStock(stockPool *pool.StockPool) {
 
 	// Add buy orders
 	buyers := googleNode.GetValue().GetBuyers()
-	buyers.SafePush(pool.NewOrder(501, 1, decimal.NewFromFloat(142.75), time.Now().Add(-40*time.Minute)))
+	buyers.SafePush(pool.NewOrder("501", 1, decimal.NewFromFloat(142.75), time.Now().Add(-40*time.Minute)))
 
 	// Add sell orders
 	sellers := googleNode.GetValue().GetSellers()
-	sellers.SafePush(pool.NewOrder(601, 1, decimal.NewFromFloat(143.25), time.Now().Add(-45*time.Minute)))
+	sellers.SafePush(pool.NewOrder("601", 1, decimal.NewFromFloat(143.25), time.Now().Add(-45*time.Minute)))
 }
 
 // TestMatchOrderBuy tests matching a buy order with existing sell orders

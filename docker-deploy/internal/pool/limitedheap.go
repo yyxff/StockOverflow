@@ -14,6 +14,15 @@ type LimitedHeap[T any] struct {
 
 	// db
 	db *sql.DB
+
+	// symbol
+	symbol string
+
+	// refill fn
+	refillFn func(db *sql.DB, symbol string, heapType string, size int) []T
+
+	// heap type
+	heapType string
 }
 
 // safe Pop
@@ -21,7 +30,9 @@ func (h *LimitedHeap[T]) SafePop() (interface{}, error) {
 	if h.Len() == 0 {
 		return nil, errors.New("pop from empty heap")
 	}
-	return heap.Pop(h), nil
+	result := heap.Pop(h)
+	h.updateHeap()
+	return result, nil
 }
 
 // safe push
@@ -57,16 +68,21 @@ func (h *LimitedHeap[T]) updateHeap() {
 		heap.Init(h)
 	} else if uint(h.Len()) < h.minSize {
 		h.pullFromDB()
+		heap.Init(h)
 	}
 }
 
 // pull enough data from db
 func (h *LimitedHeap[T]) pullFromDB() error {
 	if h.db == nil {
-		return errors.New("no db connected now!")
+		return errors.New("no db connected now")
 	}
 
-	// do sql
+	h.data = h.refillFn(h.db, h.symbol, "buyer", int((h.maxSize+h.minSize)/2))
 
+	// update minsize
+	if h.Len() < int(h.minSize) {
+		h.minSize = uint(h.Len() / 2)
+	}
 	return nil
 }

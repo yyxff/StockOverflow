@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -141,7 +140,7 @@ func (e *Exchange) matchBuyOrder(stockNode *pool.LruNode[*pool.StockNode], order
 		}
 
 		// Get the sell order from the database
-		sellOrderID := strconv.Itoa(int(sellOrderInfo.GetID()))
+		sellOrderID := sellOrderInfo.GetID()
 		sellOrder, err := database.GetOrder(e.db, sellOrderID)
 
 		if err != nil || sellOrder.Status != "open" {
@@ -203,9 +202,8 @@ func (e *Exchange) addRemainingBuyOrder(stockNode *pool.LruNode[*pool.StockNode]
 	}
 
 	// Add to buyers heap
-	orderIDInt, _ := strconv.Atoi(orderID)
 	buyerOrder := pool.NewOrder(
-		uint(orderIDInt),
+		orderID,
 		uint(remainingAmount.IntPart()),
 		price,
 		time.Now(),
@@ -276,7 +274,7 @@ func (e *Exchange) matchSellOrder(stockNode *pool.LruNode[*pool.StockNode], orde
 		}
 
 		// Get the buy order from the database
-		buyOrderID := strconv.Itoa(int(buyOrderInfo.GetID()))
+		buyOrderID := buyOrderInfo.GetID()
 		buyOrder, err := database.GetOrder(e.db, buyOrderID)
 
 		if err != nil || buyOrder.Status != "open" {
@@ -338,9 +336,8 @@ func (e *Exchange) addRemainingSellOrder(stockNode *pool.LruNode[*pool.StockNode
 	}
 
 	// Add to sellers heap
-	orderIDInt, _ := strconv.Atoi(orderID)
 	sellerOrder := pool.NewOrder(
-		uint(orderIDInt),
+		orderID,
 		uint(remainingAmount.IntPart()),
 		price,
 		time.Now(),

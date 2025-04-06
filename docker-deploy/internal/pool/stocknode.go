@@ -13,8 +13,8 @@ func NewStockNode(symbol string, limit uint) *LruNode[*StockNode] {
 	return &LruNode[*StockNode]{
 		symbol: symbol,
 		value: &StockNode{
-			sellers: *NewSellerHeap(limit),
-			buyers:  *NewBuyerHeap(limit),
+			sellers: *NewSellerHeap(symbol, limit, 1),
+			buyers:  *NewBuyerHeap(symbol, limit, 1),
 		},
 	}
 }

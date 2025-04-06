@@ -1,17 +1,12 @@
 package pool
 
 type BuyerHeap struct {
-	*LimitedHeap[Order]
+	*OrderHeap
 }
 
-func NewBuyerHeap(maxSize uint, minSize uint) *BuyerHeap {
+func NewBuyerHeap(symbol string, maxSize uint, minSize uint) *BuyerHeap {
 	return &BuyerHeap{
-		&LimitedHeap[Order]{
-			NewHeap(lessMax),
-			maxSize,
-			minSize,
-			nil,
-		},
+		NewOrderHeap(symbol, maxSize, minSize, lessMax, "buyer"),
 	}
 }
 
