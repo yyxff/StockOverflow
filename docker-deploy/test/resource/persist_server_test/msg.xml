@@ -1,0 +1,61 @@
+571
+<?xml version="1.0" encoding="UTF-8"?>
+<create>
+    <account id="trader1" balance="10000.00"/>
+    <account id="trader2" balance="15000.00"/>
+    <account id="trader3" balance="8000.00"/>
+    <symbol sym="AAPL">
+        <account id="trader1">200</account>
+        <account id="trader2">100</account>
+    </symbol>
+    <symbol sym="GOOG">
+        <account id="trader2">50</account>
+        <account id="trader3">30</account>
+    </symbol>
+    <symbol sym="TSLA">
+        <account id="trader1">75</account>
+        <account id="trader3">25</account>
+    </symbol>
+</create>
+133
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader3">
+    <order sym="AAPL" amount="50" limit="145.75"/>
+</transactions>
+134
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader1">
+    <order sym="AAPL" amount="-50" limit="143.50"/>
+</transactions>
+238
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader2">
+    <order sym="AAPL" amount="-30" limit="145.00"/>
+    <order sym="GOOG" amount="-10" limit="2000.00"/>
+    <order sym="TSLA" amount="15" limit="225.50"/>
+</transactions>
+122
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader1">
+    <query id="1"/>
+    <query id="3"/>
+</transactions>
+103
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader3">
+    <cancel id="2"/>
+</transactions>
+174
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader2">
+    <query id="5"/>
+    <order sym="TSLA" amount="10" limit="230.00"/>
+    <cancel id="4"/>
+</transactions>
+174
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader2">
+    <cancel id="4"/>
+    <order sym="TSLA" amount="10" limit="230.00"/>
+    <query id="5"/>
+</transactions>
