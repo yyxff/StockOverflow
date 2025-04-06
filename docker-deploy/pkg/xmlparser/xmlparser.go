@@ -16,15 +16,6 @@ func (parser *Xmlparser) Parse(xmlData []byte) (any, reflect.Type, error) {
 
 	decoder := xml.NewDecoder(bytes.NewReader(xmlData))
 
-	var c Create
-	err := xml.Unmarshal([]byte(xmlData), &c)
-	if err != nil {
-		fmt.Println("XML parse error:", err)
-	}
-	fmt.Printf("%+v\n", c)
-
-	fmt.Printf("Raw: %x\n", xmlData[:10])
-
 	for {
 		tok, err := decoder.Token()
 		if err != nil {

@@ -77,6 +77,10 @@ func (r Results) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			if err := e.EncodeElement(v, xml.StartElement{Name: xml.Name{Local: "canceled"}}); err != nil {
 				return err
 			}
+		case CanceledOrder:
+			if err := e.EncodeElement(v, xml.StartElement{Name: xml.Name{Local: "canceled"}}); err != nil {
+				return err
+			}
 		}
 	}
 

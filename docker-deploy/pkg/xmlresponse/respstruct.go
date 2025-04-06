@@ -46,10 +46,18 @@ type Open struct {
 
 // Canceled represents a canceled order or portion
 type Canceled struct {
-	ID       string     `xml:"id,attr,omitempty"` // Only used at top level
-	Shares   float64    `xml:"shares,attr,omitempty"`
-	Time     int64      `xml:"time,attr,omitempty"`
-	Executed []Executed `xml:"executed,omitempty"` // Only used at top level
+	ID     string  `xml:"id,attr,omitempty"` // Only used at top level
+	Shares float64 `xml:"shares,attr,omitempty"`
+	Time   int64   `xml:"time,attr,omitempty"`
+
+	Executed []Executed `xml:"executed,omitempty"`
+}
+
+// CanceledOrder represents a canceled order
+type CanceledOrder struct {
+	ID       string     `xml:"id,attr"`
+	Canceled Canceled   `xml:"canceled,omitempty"`
+	Executed []Executed `xml:"executed,omitempty"`
 }
 
 // Executed represents an executed portion of an order

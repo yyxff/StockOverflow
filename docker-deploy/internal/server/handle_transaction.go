@@ -174,9 +174,14 @@ func createStatusResponse(orderID string, order *database.Order, executions []da
 }
 
 // createCanceledResponse creates a canceled response from an order and its executions
-func createCanceledResponse(orderID string, order *database.Order, executions []database.Execution) xmlresponse.Canceled {
-	canceled := xmlresponse.Canceled{
-		ID:     orderID,
+func createCanceledResponse(orderID string, order *database.Order, executions []database.Execution) xmlresponse.CanceledOrder {
+	canceled := xmlresponse.CanceledOrder{
+		ID: orderID,
+		// Shares: float64(order.Remaining.InexactFloat64()),
+		// Time:   order.CanceledTime,
+	}
+
+	canceled.Canceled = xmlresponse.Canceled{
 		Shares: float64(order.Remaining.InexactFloat64()),
 		Time:   order.CanceledTime,
 	}

@@ -2,6 +2,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <transactions id="trader2">
     <order sym="TSLA" amount="10" limit="230.00"/>
-    <query id="5"/>
-    <cancel id="4"/>
+    <query id="4"/>
+    <cancel id="1"/>
 </transactions>
