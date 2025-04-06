@@ -12,24 +12,10 @@ import (
 
 // CreateAccount creates a new account in the database
 func CreateAccount(db *sql.DB, id string, balance decimal.Decimal) error {
-	// Check if account already exists
-	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1)", id).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("error checking if account exists: %v", err)
-	}
-
-	if exists {
-		return fmt.Errorf("account already exists: %s", id)
-	}
-
-	// Create the account
-	_, err = db.Exec("INSERT INTO accounts (id, balance) VALUES ($1, $2)", id, balance)
-	if err != nil {
-		return fmt.Errorf("error creating account: %v", err)
-	}
-
-	return nil
+	return ExecuteWithTransaction(db, func(tx *sql.Tx) error {
+		txFuncs := &CommonTxFunctions{Tx: tx}
+		return txFuncs.CreateAccount(id, balance)
+	})
 }
 
 // GetAccount retrieves an account from the database
@@ -48,12 +34,10 @@ func GetAccount(db *sql.DB, id string) (*Account, error) {
 
 // UpdateAccountBalance updates an account's balance
 func UpdateAccountBalance(db *sql.DB, id string, balance decimal.Decimal) error {
-	_, err := db.Exec("UPDATE accounts SET balance = $1 WHERE id = $2", balance, id)
-	if err != nil {
-		return fmt.Errorf("error updating account balance: %v", err)
-	}
-
-	return nil
+	return ExecuteWithTransaction(db, func(tx *sql.Tx) error {
+		txFuncs := &CommonTxFunctions{Tx: tx}
+		return txFuncs.UpdateAccountBalance(id, balance)
+	})
 }
 
 // ===================== Position Operations =====================
@@ -101,134 +85,20 @@ func GetPosition(db *sql.DB, accountID string, symbol string) (*Position, error)
 
 // CreateOrUpdatePosition creates or updates a position
 func CreateOrUpdatePosition(db *sql.DB, accountID string, symbol string, amount decimal.Decimal) error {
-	// Check if position exists
-	var exists bool
-	err := db.QueryRow(
-		"SELECT EXISTS(SELECT 1 FROM positions WHERE account_id = $1 AND symbol = $2)",
-		accountID, symbol).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("error checking if position exists: %v", err)
-	}
-
-	if exists {
-		// Update existing position
-		_, err = db.Exec("UPDATE positions SET amount = $1 WHERE account_id = $2 AND symbol = $3",
-			amount, accountID, symbol)
-		if err != nil {
-			return fmt.Errorf("error updating position: %v", err)
-		}
-	} else {
-		// Create new position
-		_, err = db.Exec("INSERT INTO positions (account_id, symbol, amount) VALUES ($1, $2, $3)",
-			accountID, symbol, amount)
-		if err != nil {
-			return fmt.Errorf("error creating position: %v", err)
-		}
-	}
-
-	return nil
-}
-
-// ===================== Symbol Operations =====================
-
-// CreateSymbol creates a new symbol if it doesn't exist
-func CreateSymbol(db *sql.DB, symbol string) error {
-	// Check if symbols table exists in the schema
-	var exists bool
-	err := db.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1 
-			FROM information_schema.tables 
-			WHERE table_name = 'symbols'
-		)
-	`).Scan(&exists)
-
-	if err != nil {
-		return fmt.Errorf("error checking if symbols table exists: %v", err)
-	}
-
-	// If symbols table doesn't exist, nothing to do
-	if !exists {
-		return nil
-	}
-
-	// Check if symbol exists
-	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM symbols WHERE symbol = $1)", symbol).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("error checking if symbol exists: %v", err)
-	}
-
-	if exists {
-		// Symbol already exists, which is fine
-		return nil
-	}
-
-	// Create the symbol
-	_, err = db.Exec("INSERT INTO symbols (symbol) VALUES ($1)", symbol)
-	if err != nil {
-		return fmt.Errorf("error creating symbol: %v", err)
-	}
-
-	return nil
-}
-
-// GetAllSymbols retrieves all symbols from the database
-func GetAllSymbols(db *sql.DB) ([]Symbol, error) {
-	// Check if symbols table exists in the schema
-	var exists bool
-	err := db.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1 
-			FROM information_schema.tables 
-			WHERE table_name = 'symbols'
-		)
-	`).Scan(&exists)
-
-	if err != nil {
-		return nil, fmt.Errorf("error checking if symbols table exists: %v", err)
-	}
-
-	// If symbols table doesn't exist, return empty slice
-	if !exists {
-		return []Symbol{}, nil
-	}
-
-	rows, err := db.Query("SELECT symbol FROM symbols")
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving symbols: %v", err)
-	}
-	defer rows.Close()
-
-	var symbols []Symbol
-	for rows.Next() {
-		var sym Symbol
-		if err := rows.Scan(&sym.Symbol); err != nil {
-			return nil, fmt.Errorf("error scanning symbol: %v", err)
-		}
-		symbols = append(symbols, sym)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating symbols: %v", err)
-	}
-
-	return symbols, nil
+	return ExecuteWithTransaction(db, func(tx *sql.Tx) error {
+		txFuncs := &CommonTxFunctions{Tx: tx}
+		return txFuncs.CreateOrUpdatePosition(accountID, symbol, amount)
+	})
 }
 
 // ===================== Order Operations =====================
 
 // CreateOrder creates a new order in the database
 func CreateOrder(db *sql.DB, order *Order) error {
-	_, err := db.Exec(
-		"INSERT INTO orders (id, account_id, symbol, amount, price, status, remaining, timestamp) "+
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-		order.ID, order.AccountID, order.Symbol, order.Amount, order.Price,
-		order.Status, order.Remaining, order.Timestamp)
-	if err != nil {
-		return fmt.Errorf("error creating order: %v", err)
-	}
-
-	return nil
+	return ExecuteWithTransaction(db, func(tx *sql.Tx) error {
+		txFuncs := &CommonTxFunctions{Tx: tx}
+		return txFuncs.CreateOrder(order)
+	})
 }
 
 // GetOrder retrieves an order from the database
@@ -261,50 +131,10 @@ func GetOrder(db *sql.DB, orderID string) (*Order, error) {
 
 // UpdateOrderStatus updates an order's status and remaining amount
 func UpdateOrderStatus(db *sql.DB, orderID string, status string, remaining decimal.Decimal, canceledTime int64) error {
-	var query string
-	var args []interface{}
-
-	if canceledTime > 0 {
-		query = "UPDATE orders SET status = $1, remaining = $2, canceled_time = $3 WHERE id = $4"
-		args = []interface{}{status, remaining, canceledTime, orderID}
-	} else {
-		query = "UPDATE orders SET status = $1, remaining = $2 WHERE id = $3"
-		args = []interface{}{status, remaining, orderID}
-	}
-
-	_, err := db.Exec(query, args...)
-	if err != nil {
-		return fmt.Errorf("error updating order status: %v", err)
-	}
-
-	return nil
-}
-
-// GetOpenOrdersBySymbol retrieves all open orders for a symbol
-func GetOpenOrdersBySymbol(db *sql.DB, symbol string) ([]Order, error) {
-	rows, err := db.Query(
-		"SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time "+
-			"FROM orders WHERE symbol = $1 AND status = 'open'", symbol)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving open orders: %v", err)
-	}
-	defer rows.Close()
-
-	var orders []Order
-	for rows.Next() {
-		var order Order
-		if err := rows.Scan(&order.ID, &order.AccountID, &order.Symbol, &order.Amount,
-			&order.Price, &order.Status, &order.Remaining, &order.Timestamp, &order.CanceledTime); err != nil {
-			return nil, fmt.Errorf("error scanning order: %v", err)
-		}
-		orders = append(orders, order)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating orders: %v", err)
-	}
-
-	return orders, nil
+	return ExecuteWithTransaction(db, func(tx *sql.Tx) error {
+		txFuncs := &CommonTxFunctions{Tx: tx}
+		return txFuncs.UpdateOrderStatus(orderID, status, remaining, canceledTime)
+	})
 }
 
 func GetOpenOrdersBySymbolForHeap(db *sql.DB, symbol string, target string, limit int) ([]Order, error) {
@@ -361,14 +191,10 @@ func GetOpenOrdersBySymbolForHeap(db *sql.DB, symbol string, target string, limi
 
 // RecordExecution creates a new execution record in the database
 func RecordExecution(db *sql.DB, execution *Execution) error {
-	_, err := db.Exec(
-		"INSERT INTO executions (order_id, shares, price, timestamp) VALUES ($1, $2, $3, $4)",
-		execution.OrderID, execution.Shares, execution.Price, execution.Timestamp)
-	if err != nil {
-		return fmt.Errorf("error creating execution: %v", err)
-	}
-
-	return nil
+	return ExecuteWithTransaction(db, func(tx *sql.Tx) error {
+		txFuncs := &CommonTxFunctions{Tx: tx}
+		return txFuncs.RecordExecution(execution.OrderID, execution.Shares, execution.Price, execution.Timestamp)
+	})
 }
 
 // GetOrderExecutions retrieves all executions for an order
@@ -431,10 +257,21 @@ type CommonTxFunctions struct {
 
 // CreateAccount creates a new account within a transaction
 func (f *CommonTxFunctions) CreateAccount(id string, balance decimal.Decimal) error {
-	_, err := f.Tx.Exec("INSERT INTO accounts (id, balance) VALUES ($1, $2)", id, balance)
+	var exists bool
+	err := f.Tx.QueryRow("SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1 FOR UPDATE)", id).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("error checking if account exists in transaction: %v", err)
+	}
+
+	if exists {
+		return fmt.Errorf("account already exists: %s", id)
+	}
+
+	_, err = f.Tx.Exec("INSERT INTO accounts (id, balance) VALUES ($1, $2)", id, balance)
 	if err != nil {
 		return fmt.Errorf("error creating account in transaction: %v", err)
 	}
+
 	return nil
 }
 
@@ -472,6 +309,20 @@ func (f *CommonTxFunctions) CreateOrUpdatePosition(accountID string, symbol stri
 		if err != nil {
 			return fmt.Errorf("error creating position in transaction: %v", err)
 		}
+	}
+
+	return nil
+}
+
+// CreateOrder creates a new order within a transaction
+func (f *CommonTxFunctions) CreateOrder(order *Order) error {
+	_, err := f.Tx.Exec(
+		"INSERT INTO orders (id, account_id, symbol, amount, price, status, remaining, timestamp) "+
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+		order.ID, order.AccountID, order.Symbol, order.Amount, order.Price,
+		order.Status, order.Remaining, order.Timestamp)
+	if err != nil {
+		return fmt.Errorf("error creating order in transaction: %v", err)
 	}
 
 	return nil
