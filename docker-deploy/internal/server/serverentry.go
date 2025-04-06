@@ -25,7 +25,7 @@ func (serverEntry *ServerEntry) Enter(mockDB *sql.DB) {
 	if mockDB == nil {
 		// Initialize database connection
 		dbm := database.DatabaseMaster{
-			ConnStr: getDBConnStr(),
+			ConnStr: GetDBConnStr(),
 			DbName:  getEnvOrDefault("DB_NAME", "stockoverflow"),
 		}
 
@@ -67,7 +67,7 @@ func (serverEntry *ServerEntry) Enter(mockDB *sql.DB) {
 
 // getDBConnStr returns the database connection string from environment
 // variables or uses default values
-func getDBConnStr() string {
+func GetDBConnStr() string {
 	host := getEnvOrDefault("DB_HOST", "localhost")
 	port := getEnvOrDefault("DB_PORT", "5432")
 	user := getEnvOrDefault("DB_USER", "postgres")

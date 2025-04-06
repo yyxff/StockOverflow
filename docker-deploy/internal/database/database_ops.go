@@ -234,7 +234,7 @@ func CreateOrder(db *sql.DB, order *Order) error {
 // GetOrder retrieves an order from the database
 func GetOrder(db *sql.DB, orderID string) (*Order, error) {
 	var order Order
-	var canceledTime sql.NullInt64 // Use sql.NullInt64 to handle NULL values
+	var canceledTime sql.NullInt64 // Use sql.NullInt64 struct to handle NULL values
 
 	err := db.QueryRow(
 		"SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time "+
@@ -319,20 +319,30 @@ func GetOpenOrdersBySymbolForHeap(db *sql.DB, symbol string, target string, limi
 	}
 
 	limitStr := strconv.Itoa(limit)
-	sql := "SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time " +
+	sqlStr := "SELECT id, account_id, symbol, amount, price, status, remaining, timestamp, canceled_time " +
 		"FROM orders WHERE symbol = $1 AND status = 'open'" + condition + " LIMIT " + limitStr
-	rows, err := db.Query(sql, symbol)
+	rows, err := db.Query(sqlStr, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving open orders: %v", err)
 	}
 	defer rows.Close()
 
 	var orders []Order
+	var canceledTime sql.NullInt64 // Use sql.NullInt64 to handle NULL values
+
 	for rows.Next() {
 		var order Order
+
 		if err := rows.Scan(&order.ID, &order.AccountID, &order.Symbol, &order.Amount,
-			&order.Price, &order.Status, &order.Remaining, &order.Timestamp, &order.CanceledTime); err != nil {
+			&order.Price, &order.Status, &order.Remaining, &order.Timestamp, &canceledTime); err != nil {
 			return nil, fmt.Errorf("error scanning order: %v", err)
+		}
+
+		// Convert NullInt64 to int64 (0 if NULL)
+		if canceledTime.Valid {
+			order.CanceledTime = canceledTime.Int64
+		} else {
+			order.CanceledTime = 0 // Use 0 or another default value for NULL
 		}
 		orders = append(orders, order)
 	}

@@ -30,15 +30,15 @@ func (h *LimitedHeap[T]) SafePop() (interface{}, error) {
 	if h.Len() == 0 {
 		return nil, errors.New("pop from empty heap")
 	}
+	h.checkMin()
 	result := heap.Pop(h)
-	h.updateHeap()
 	return result, nil
 }
 
 // safe push
 func (h *LimitedHeap[T]) SafePush(ele *Order) error {
 	heap.Push(h, *ele)
-	h.updateHeap()
+	h.checkMax()
 	return nil
 }
 
@@ -48,7 +48,7 @@ func (h *LimitedHeap[T]) SetDB(db *sql.DB) {
 }
 
 // update heap to keep it small
-func (h *LimitedHeap[T]) updateHeap() {
+func (h *LimitedHeap[T]) checkMax() {
 	if uint(h.Len()) > h.maxSize {
 		//  todo set minsize
 		newSize := h.maxSize / 2
@@ -66,7 +66,12 @@ func (h *LimitedHeap[T]) updateHeap() {
 		}
 		h.data = data
 		heap.Init(h)
-	} else if uint(h.Len()) < h.minSize {
+	}
+}
+
+// update heap to keep it big
+func (h *LimitedHeap[T]) checkMin() {
+	if uint(h.Len()) < h.minSize {
 		h.pullFromDB()
 		heap.Init(h)
 	}

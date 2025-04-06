@@ -1,0 +1,6 @@
+154
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="trader3">
+    <order sym="AAPL" amount="50" limit="145.75"/>
+    <cancel id="1"/>
+</transactions>
