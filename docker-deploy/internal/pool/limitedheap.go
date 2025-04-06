@@ -71,7 +71,7 @@ func (h *LimitedHeap[T]) checkMax() {
 
 // update heap to keep it big
 func (h *LimitedHeap[T]) CheckMin() {
-	if uint(h.Len()) < h.minSize {
+	if uint(h.Len()) < h.minSize+1 {
 		h.pullFromDB()
 		heap.Init(h)
 	}
@@ -86,8 +86,8 @@ func (h *LimitedHeap[T]) pullFromDB() error {
 	h.data = h.refillFn(h.db, h.symbol, h.heapType, int((h.maxSize+h.minSize)/2))
 
 	// update minsize
-	if h.Len() < int(h.minSize) {
-		h.minSize = uint(h.Len() / 2)
-	}
+	// if h.Len() < int(h.minSize) {
+	// 	h.minSize = uint(h.Len() / 2)
+	// }
 	return nil
 }

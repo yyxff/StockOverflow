@@ -1,5 +1,6 @@
-122
+175
 <?xml version="1.0" encoding="UTF-8"?>
 <results>
-  <opened sym="APPL" amount="200" limit="15" id="12"></opened>
+  <error id="100">order not found: 100</error>
+  <error id="100">failed to find order: order not found: 100</error>
 </results>
