@@ -45,7 +45,6 @@ type Server struct {
 
 	// Mutexes for concurrent access
 	accountsMutex sync.RWMutex
-	ordersMutex   sync.RWMutex
 	idMutex       sync.Mutex
 }
 
