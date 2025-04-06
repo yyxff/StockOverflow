@@ -339,4 +339,28 @@ func (s *Server) processCancel(cancel *xmlparser.Cancel, response *xmlresponse.R
 	// Add to response
 	response.Canceled = append(response.Canceled, canceled)
 	s.logger.Printf("Successfully canceled order %s", cancel.ID)
+
+	// if it's a buy order, refund the money, if it's a sell order, return the shares
+	if order.Amount.IsPositive() { // Buy order
+		// Refund money to the account
+		s.accountsMutex.Lock()
+		if account, exists := s.accounts[order.AccountID]; exists {
+			refundAmount := order.Remaining.Mul(order.Price)
+			account.Balance = account.Balance.Add(refundAmount)
+			s.logger.Printf("Updated in-memory balance for account %s after buy order cancelation", order.AccountID)
+		}
+		s.accountsMutex.Unlock()
+	} else { // Sell order
+		// Return shares to the account
+		s.accountsMutex.Lock()
+		if account, exists := s.accounts[order.AccountID]; exists {
+			if account.Positions == nil {
+				account.Positions = make(map[string]decimal.Decimal)
+			}
+			currentShares := account.Positions[order.Symbol]
+			account.Positions[order.Symbol] = currentShares.Add(order.Remaining)
+			s.logger.Printf("Updated in-memory position for account %s after sell order cancelation", order.AccountID)
+		}
+		s.accountsMutex.Unlock()
+	}
 }
