@@ -79,12 +79,6 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 	if err != nil {
 		// Symbol doesn't exist in pool, create a new node
 		stockNode = pool.NewStockNode(symbol.Symbol, 10)
-
-		buyers := stockNode.GetValue().GetBuyers()
-		buyers.CheckMin()
-		sellers := stockNode.GetValue().GetSellers()
-		sellers.CheckMin()
-
 		err = s.stockPool.Put(stockNode)
 		if err != nil {
 			s.logger.Printf("Warning: Failed to add stock node to pool: %v", err)
@@ -118,7 +112,7 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 			account = &AccountNode{
 				ID:        dbAccount.ID,
 				Balance:   dbAccount.Balance,
-				Positions: make(map[string]decimal.Decimal), // Add this line
+				Positions: make(map[string]decimal.Decimal),
 			}
 
 			// Load all existing positions for this account
@@ -134,8 +128,20 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 			s.accountsMutex.Unlock()
 		}
 
-		// Update position in database
-		err = database.CreateOrUpdatePosition(s.db, allocation.ID, symbol.Symbol, allocation.Amount)
+		// Check if position already exists in database
+		position, err := database.GetPosition(s.db, allocation.ID, symbol.Symbol)
+
+		var newAmount decimal.Decimal
+		if err == nil && position != nil {
+			// Position exists, add to it
+			newAmount = position.Amount.Add(allocation.Amount)
+		} else {
+			// Position doesn't exist, create with allocation amount
+			newAmount = allocation.Amount
+		}
+
+		// Update position in database with the new amount
+		err = database.CreateOrUpdatePosition(s.db, allocation.ID, symbol.Symbol, newAmount)
 		if err != nil {
 			s.logger.Printf("Failed to update position: %v", err)
 			response.Errors = append(response.Errors, xmlresponse.Error{
@@ -151,8 +157,10 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 		if s.accounts[allocation.ID].Positions == nil {
 			s.accounts[allocation.ID].Positions = make(map[string]decimal.Decimal)
 		}
-		// Store the amount of shares, not balance
-		s.accounts[allocation.ID].Positions[symbol.Symbol] = allocation.Amount // This is correct because allocation.Balance is the amount of shares
+
+		// Add to existing position in memory, if any
+		currentAmount := s.accounts[allocation.ID].Positions[symbol.Symbol] // if just make, it's zero.
+		s.accounts[allocation.ID].Positions[symbol.Symbol] = currentAmount.Add(allocation.Amount)
 		s.accountsMutex.Unlock()
 
 		// Add success response
@@ -160,7 +168,7 @@ func (s *Server) processSymbol(symbol *xmlparser.Symbol, response *xmlresponse.R
 			Symbol: symbol.Symbol,
 			ID:     allocation.ID,
 		})
-		s.logger.Printf("Successfully allocated %s shares of %s to account %s",
-			allocation.Amount.String(), symbol.Symbol, allocation.ID)
+		s.logger.Printf("Successfully allocated %s shares of %s to account %s (total now: %s)",
+			allocation.Amount.String(), symbol.Symbol, allocation.ID, newAmount.String())
 	}
 }
