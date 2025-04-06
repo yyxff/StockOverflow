@@ -27,10 +27,10 @@ type LimitedHeap[T any] struct {
 
 // safe Pop
 func (h *LimitedHeap[T]) SafePop() (interface{}, error) {
+	h.CheckMin()
 	if h.Len() == 0 {
 		return nil, errors.New("pop from empty heap")
 	}
-	h.CheckMin()
 	result := heap.Pop(h)
 	return result, nil
 }
@@ -83,7 +83,7 @@ func (h *LimitedHeap[T]) pullFromDB() error {
 		return errors.New("no db connected now")
 	}
 
-	h.data = h.refillFn(h.db, h.symbol, "buyer", int((h.maxSize+h.minSize)/2))
+	h.data = h.refillFn(h.db, h.symbol, h.heapType, int((h.maxSize+h.minSize)/2))
 
 	// update minsize
 	if h.Len() < int(h.minSize) {

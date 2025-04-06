@@ -39,7 +39,7 @@ func refillFn(db *sql.DB, symbol string, heapType string, size int) []Order {
 	// new heap data
 	var data []Order
 	for _, order := range orders {
-		neworder := NewOrder(order.ID, uint(order.Amount.IntPart()), order.Price, time.Unix(order.Timestamp, 0))
+		neworder := NewOrder(order.ID, uint(order.Remaining.IntPart()), order.Price, time.Unix(order.Timestamp, 0))
 		data = append(data, *neworder)
 	}
 	return data
