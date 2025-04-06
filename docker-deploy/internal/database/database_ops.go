@@ -508,3 +508,48 @@ func (f *CommonTxFunctions) UpdateOrderStatus(orderID string, status string, rem
 
 	return nil
 }
+
+// ===================== Server Start Helpers =====================
+
+// GetMaxOrderID retrieves the highest order ID from the database
+func GetMaxOrderID(db *sql.DB) (int, error) {
+	// Check if orders table exists and has records
+	var exists bool
+	err := db.QueryRow(`
+        SELECT EXISTS (
+            SELECT 1 
+            FROM information_schema.tables 
+            WHERE table_name = 'orders'
+        )
+    `).Scan(&exists)
+
+	if err != nil {
+		return 0, fmt.Errorf("error checking if orders table exists: %v", err)
+	}
+
+	// If orders table doesn't exist, return default
+	if !exists {
+		return 0, nil
+	}
+
+	// Query the highest order ID
+	var maxID sql.NullString
+	err = db.QueryRow("SELECT MAX(id) FROM orders").Scan(&maxID)
+
+	if err != nil {
+		return 0, fmt.Errorf("error querying max order ID: %v", err)
+	}
+
+	// If no orders exist yet, return default
+	if !maxID.Valid {
+		return 0, nil
+	}
+
+	// Convert string ID to integer
+	id, err := strconv.Atoi(maxID.String)
+	if err != nil {
+		return 0, fmt.Errorf("error converting order ID to integer: %v", err)
+	}
+
+	return id, nil
+}

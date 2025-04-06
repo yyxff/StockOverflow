@@ -1,6 +1,7 @@
 package server
 
 import (
+	"StockOverflow/internal/database"
 	"StockOverflow/internal/exchange"
 	"StockOverflow/internal/pool"
 	"StockOverflow/pkg/xmlparser"
@@ -57,7 +58,6 @@ func NewServer(logger *log.Logger) *Server {
 		connections: make(map[net.Conn]struct{}),
 		stockPool:   stockPool,
 		accounts:    make(map[string]*AccountNode),
-		nextOrderID: 1,
 	}
 
 	return server
@@ -67,6 +67,23 @@ func NewServer(logger *log.Logger) *Server {
 func (s *Server) SetDB(db *sql.DB) {
 	s.db = db
 	s.exchange = exchange.NewExchange(db, s.stockPool, s.logger)
+	// Initialize nextOrderID from database
+	maxID, err := database.GetMaxOrderID(db)
+	if err != nil {
+		s.logger.Printf("Warning: Failed to get max order ID from database: %v", err)
+		// Fall back to default if there's an error
+		s.nextOrderID = 1
+	} else {
+		// If there are existing orders, use max ID + 1
+		// Otherwise, start from 11 as requested
+		if maxID > 0 {
+			s.nextOrderID = maxID + 1
+			s.logger.Printf("Initialized nextOrderID to %d based on database", s.nextOrderID)
+		} else {
+			s.nextOrderID = 1
+			s.logger.Printf("No existing orders found, initializing nextOrderID to %d", s.nextOrderID)
+		}
+	}
 }
 
 // Start begins listening for connections on the specified address
