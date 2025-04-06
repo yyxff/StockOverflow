@@ -178,6 +178,15 @@ func (e *Exchange) matchBuyOrder(stockNode *pool.LruNode[*pool.StockNode], order
 			executionAmount = sellOrder.Remaining
 		}
 
+		if remainingAmount.LessThan(sellOrder.Remaining) {
+			newSellRemaining := sellOrder.Remaining.Sub(executionAmount)
+			// Update the sell order info for the heap
+			sellOrderInfo.SetAmount(uint(newSellRemaining.IntPart()))
+			// Push the updated sell order back to the heap
+			sellOrderPtr := &sellOrderInfo
+			sellersHeap.SafePush(sellOrderPtr)
+		}
+
 		// Execute the match
 		err = e.executeMatch(
 			orderID, accountID, sellOrderID, sellOrder.AccountID,
@@ -310,6 +319,15 @@ func (e *Exchange) matchSellOrder(stockNode *pool.LruNode[*pool.StockNode], orde
 			executionAmount = remainingAmount
 		} else {
 			executionAmount = buyOrder.Remaining
+		}
+
+		if remainingAmount.LessThan(buyOrder.Remaining) {
+			newBuyRemaining := buyOrder.Remaining.Sub(executionAmount)
+			// Update the buy order info for the heap
+			buyOrderInfo.SetAmount(uint(newBuyRemaining.IntPart()))
+			// Push the updated buy order back to the heap
+			buyOrderPtr := &buyOrderInfo
+			buyersHeap.SafePush(buyOrderPtr)
 		}
 
 		// Execute the match

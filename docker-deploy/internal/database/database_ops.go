@@ -511,7 +511,7 @@ func (f *CommonTxFunctions) UpdateOrderStatus(orderID string, status string, rem
 
 // ===================== Server Start Helpers =====================
 
-// GetMaxOrderID retrieves the highest order ID from the database
+// GetMaxOrderID retrieves the highest order ID from the database starting from server start
 func GetMaxOrderID(db *sql.DB) (int, error) {
 	// Check if orders table exists and has records
 	var exists bool
@@ -522,7 +522,6 @@ func GetMaxOrderID(db *sql.DB) (int, error) {
             WHERE table_name = 'orders'
         )
     `).Scan(&exists)
-
 	if err != nil {
 		return 0, fmt.Errorf("error checking if orders table exists: %v", err)
 	}
@@ -532,24 +531,38 @@ func GetMaxOrderID(db *sql.DB) (int, error) {
 		return 0, nil
 	}
 
-	// Query the highest order ID
-	var maxID sql.NullString
-	err = db.QueryRow("SELECT MAX(id) FROM orders").Scan(&maxID)
-
+	// Get all order IDs from the database
+	rows, err := db.Query("SELECT id FROM orders")
 	if err != nil {
-		return 0, fmt.Errorf("error querying max order ID: %v", err)
+		return 0, fmt.Errorf("error querying order IDs: %v", err)
+	}
+	defer rows.Close()
+
+	maxID := 0
+
+	// Iterate through all IDs and find the maximum numerical value
+	for rows.Next() {
+		var idStr string
+		if err := rows.Scan(&idStr); err != nil {
+			return 0, fmt.Errorf("error scanning order ID: %v", err)
+		}
+
+		// Try to convert string ID to integer
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			// Skip non-numeric IDs
+			continue
+		}
+
+		// Update maxID if this ID is larger
+		if id > maxID {
+			maxID = id
+		}
 	}
 
-	// If no orders exist yet, return default
-	if !maxID.Valid {
-		return 0, nil
+	if err = rows.Err(); err != nil {
+		return 0, fmt.Errorf("error iterating order IDs: %v", err)
 	}
 
-	// Convert string ID to integer
-	id, err := strconv.Atoi(maxID.String)
-	if err != nil {
-		return 0, fmt.Errorf("error converting order ID to integer: %v", err)
-	}
-
-	return id, nil
+	return maxID, nil
 }

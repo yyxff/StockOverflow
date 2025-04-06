@@ -40,3 +40,8 @@ func (order *Order) GetTime() time.Time {
 func (order *Order) GetID() string {
 	return order.id
 }
+
+// setter for amount
+func (order *Order) SetAmount(amount uint) {
+	order.amount = amount
+}
