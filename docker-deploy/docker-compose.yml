@@ -40,6 +40,29 @@ services:
       timeout: 5s
       retries: 5
 
+
+  # Locust load testing
+  locust-master:
+    build: ./swarm
+    ports:
+      - "8089:8089"    # Web UI port
+    command: --master --host app  # tested host（app）
+    depends_on:
+      db:  
+        condition: service_healthy 
+    networks:
+      - mynetwork
+
+  locust-worker:
+    build: ./swarm
+    command: --worker --master-host locust-master
+    depends_on:
+      db:  
+        condition: service_healthy 
+    scale: 4  
+    networks:
+      - mynetwork
+
 volumes:
   postgres_data:
 
