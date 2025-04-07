@@ -289,7 +289,7 @@ func (f *CommonTxFunctions) CreateOrUpdatePosition(accountID string, symbol stri
 	// Check if position exists
 	var exists bool
 	err := f.Tx.QueryRow(
-		"SELECT EXISTS(SELECT 1 FROM positions WHERE account_id = $1 AND symbol = $2)",
+		"SELECT EXISTS(SELECT 1 FROM positions WHERE account_id = $1 AND symbol = $2 FOR UPDATE)",
 		accountID, symbol).Scan(&exists)
 	if err != nil {
 		return fmt.Errorf("error checking if position exists in transaction: %v", err)
