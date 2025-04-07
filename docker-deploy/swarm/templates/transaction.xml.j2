@@ -1,0 +1,15 @@
+<transactions id="{{ account_id }}">
+  {% for action in actions %}
+    {% if action.type == "order" %}
+      <order 
+        sym="{{ action.sym }}" 
+        amount="{{ action.amount }}" 
+        limit="{{ "%.2f"|format(action.limit) }}"
+      />
+    {% elif action.type == "query" %}
+      <query id="{{ action.trans_id }}"/>
+    {% elif action.type == "cancel" %}
+      <cancel id="{{ action.trans_id }}"/>
+    {% endif %}
+  {% endfor %}
+</transactions>

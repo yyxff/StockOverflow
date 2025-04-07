@@ -1,0 +1,19 @@
+<create>
+  {% for element in elements %}
+    {# 处理 account 元素 #}
+    {% if element.type == "account" %}
+      <account 
+        id="{{ element.data.id }}" 
+        balance="{{ "%.2f"|format(element.data.balance) }}"
+      />
+
+    {# 处理 symbol 元素 #}
+    {% elif element.type == "symbol" %}
+      <symbol sym="{{ element.data.name }}">
+        {% for acc in element.data.accounts %}
+          <account id="{{ acc.id }}">{{ random.randint(1, 1000) }}</account>
+        {% endfor %}
+      </symbol>
+    {% endif %}
+  {% endfor %}
+</create>
