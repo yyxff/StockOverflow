@@ -66,10 +66,10 @@ class TcpClient:
         # 生成 0~3 个 account 元素
         accounts = [
             {
-                "id": self.fake.unique.bothify("ACCT_####"),  # 唯一账户ID
+                "id": self.fake.unique.bothify("ACCT_###"),  # 唯一账户ID
                 "balance": round(random.uniform(1000.0, 100000.0), 2)  # 保留两位小数
             }
-            for _ in range(random.randint(0, 3))
+            for _ in range(random.randint(0, 1))
         ]
         
         # 记录生成的 account ID 到全局池
@@ -78,12 +78,12 @@ class TcpClient:
 
         # 生成 0~2 个 symbol 元素
         symbols = []
-        for _ in range(random.randint(0, 2)):
+        for _ in range(random.randint(0, 1)):
             symbol = {
                 "name": random.choice(["BTC", "ETH", "USD", "EUR"]),  # 符号名称
                 "accounts": [
-                    {"id": self.fake.unique.bothify("ACCT_####")}  # 从已有账户池中随机选择
-                    for _ in range(random.randint(1, 3))  # 每个 symbol 包含 1~3 个 account
+                    {"id": self.fake.unique.bothify("SYM_###")}  # 从已有账户池中随机选择
+                    for _ in range(random.randint(1, 2))  # 每个 symbol 包含 1~3 个 account
                 ]
             }
             symbols.append(symbol)
@@ -100,8 +100,9 @@ class TcpClient:
         """生成 <transactions> 请求的测试数据"""
         # 生成原始动作列表（未打乱顺序）
         action_types = ["order", "query", "cancel"]
+        # action_types = ["query", "cancel"]
         actions = []
-        for _ in range(random.randint(1, 5)):
+        for _ in range(random.randint(0, 1)):
             action_type = random.choice(action_types)
             if action_type == "order":
                 trans_id =  str(random.randint(1, 10000))
@@ -127,7 +128,7 @@ class TcpClient:
         random.shuffle(actions)
         
         return {
-            "account_id": self.fake.unique.bothify("ACCT_####"),
+            "account_id": self.fake.unique.bothify("ACCT_###"),
             "actions": actions
         }
 
@@ -146,7 +147,7 @@ class TcpUser(User):
     #     self.client.send_xml(xml_request)
 
 
-    @task(weight=1)
+    @task(weight=0)
     def send_create(self):
         xml_request = templates["template_create"].render(self.client._generate_create_data(),random=random)
         self.client.send_xml(xml_request)
@@ -161,4 +162,4 @@ class TcpUser(User):
 class MyUser(TcpUser):
     host = "app"  # service name in docker
     port = 12345
-    wait_time = between(1, 2)
+    wait_time = between(0.2, 0.5)

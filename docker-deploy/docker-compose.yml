@@ -19,6 +19,8 @@ services:
         condition: service_healthy 
     networks:
       - mynetwork
+    cpuset: "${CPUSET_APP:-0,1,2,3}"
+    # cpus: '1.0'
 
   # PostgreSQL
   db:
@@ -39,6 +41,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    cpuset: "${CPUSET_APP:-0,1,2,3}"
+
 
 
   # Locust load testing
@@ -52,6 +56,9 @@ services:
         condition: service_healthy 
     networks:
       - mynetwork
+    cpuset: "${CPUSET_LOCUST:-4,5,6,7}"
+
+
 
   locust-worker:
     build: ./swarm
@@ -62,6 +69,9 @@ services:
     scale: 4  
     networks:
       - mynetwork
+    cpuset: "${CPUSET_LOCUST:-4,5,6,7}"
+
+
 
 volumes:
   postgres_data:

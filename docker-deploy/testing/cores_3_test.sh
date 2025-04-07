@@ -1,0 +1,1 @@
+CPUSET_APP="0,1,2" CPUSET_LOCUST="3,4,5,6,7" docker-compose up
