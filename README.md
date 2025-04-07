@@ -178,25 +178,23 @@ chmod 777 *.sh
 ### You can adjust the max user and user spawn rate according to the website
 ```
 
-
-
 ### 4.2 Result Graph
 
 **1-core:** **100 rps**, takes 100% of the cpu, mainly occupied by DatabaseIO
 
-<img src="/Users/xuantang/Desktop/1core.png" alt="1core" style="zoom:67%;" />
+<img src="/pngs/1core.png" alt="1core" style="zoom:67%;" />
 
 **2-cores:** **200rps** takes 100% of cpus, mainly occupied by DatabaseIO
 
-![2core](/Users/xuantang/Desktop/2core.png)
+<img src="/pngs/2core.png" alt="2core" style="zoom:67%;" />
 
 **3-cores:** **315rps** takes 100% of cpus, mainly occupied by DatabaseIO
 
-![3core](/Users/xuantang/Desktop/3core.png)
+<img src="/pngs/3core.png" alt="3core" style="zoom:67%;" />
 
 **4-cores:** **450rps** takes 100% of cpus, mainly occupied by DatabaseIO
 
-![4cores](/Users/xuantang/Desktop/4cores.png)
+<img src="/pngs/4core.png" alt="4core" style="zoom:67%;" />
 
 ### 4.3 Bottleneck Analysis
 
