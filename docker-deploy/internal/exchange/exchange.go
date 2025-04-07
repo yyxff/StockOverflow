@@ -58,7 +58,7 @@ func (e *Exchange) MatchOrder(orderID string, accountID string, symbol string, i
 	stockNode, err := e.stockPool.Get(symbol)
 	if err != nil {
 		// Symbol doesn't exist in pool, create a new node
-		stockNode = pool.NewStockNode(symbol, 10)
+		stockNode = pool.NewStockNode(symbol, 1000)
 
 		buyers := stockNode.GetValue().GetBuyers()
 		buyers.SetDB(e.db)
