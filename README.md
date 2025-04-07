@@ -22,3 +22,9 @@ chmod 777 *.sh
 ### Or you can view on http://vcm-xxxxx.vm.duke.edu:8089/
 ### So you can do browser views for graphs
 ### You can adjust the max user and user spawn rate according to the website
+```
+
+### Specific details
+
+- you can find `writeup` under `docker-deploy` dir
+- you can find `testing` under `docker-deploy` dir
